@@ -1,0 +1,292 @@
+{
+  "site": {
+    "name": "TaalibTravels",
+    "tagline": "Umrah reizen met begeleiding",
+    "description": "TaalibTravels organiseert betaalbare Umrah-reizen met vlucht, verblijf in Makkah en Madinah, visum, dagelijkse begeleiding en opleidingen. Reserveer je plek via WhatsApp.",
+    "url": "https://www.taalibtravels.com",
+    "locale": "nl_BE",
+    "email": "info@taalibtravels.com",
+    "whatsapp": {
+      "display": "0489 28 94 90",
+      "international": "32489289490"
+    },
+    "instagram": {
+      "handle": "@taalibtravels",
+      "url": "https://www.instagram.com/taalibtravels"
+    }
+  },
+
+  "navigation": [
+    { "href": "/", "label": "Home" },
+    { "href": "/reizen", "label": "Reizen" },
+    { "href": "/contact", "label": "Contact" }
+  ],
+
+  "inclusions": {
+    "flight": {
+      "label": "Heen- en terugvlucht",
+      "description": "Vanuit Brussel of Amsterdam, inclusief ruimbagage.",
+      "icon": "plane"
+    },
+    "stay": {
+      "label": "Verblijf (Makkah & Madinah)",
+      "description": "Hotels op korte loopafstand van beide moskeeën.",
+      "icon": "hotel"
+    },
+    "visa": {
+      "label": "Visum (1 jaar geldig)",
+      "description": "Wij regelen de volledige visumaanvraag voor je.",
+      "icon": "passport"
+    },
+    "guidance": {
+      "label": "Begeleiding",
+      "description": "Nederlandstalige begeleiding van vertrek tot terugkomst.",
+      "icon": "guide"
+    },
+    "activities": {
+      "label": "Activiteiten",
+      "description": "Ziyarah, excursies en groepsactiviteiten ter plaatse.",
+      "icon": "activities"
+    },
+    "education": {
+      "label": "Opleidingen",
+      "description": "Dagelijkse lessen over de rituelen en het gedrag van de Umrah.",
+      "icon": "education"
+    },
+    "halfPension": {
+      "label": "Halfpension",
+      "description": "Dagelijks ontbijt en avondmaal in het hotel.",
+      "icon": "meals"
+    },
+    "iftarSuhoor": {
+      "label": "Iftar & suhoor",
+      "description": "Dagelijks verzorgd in het hotel of nabij de Haram.",
+      "icon": "meals"
+    },
+    "transfers": {
+      "label": "Transfers",
+      "description": "Privétransfers tussen luchthaven, hotel en ziyarah.",
+      "icon": "transport"
+    }
+  },
+
+  "gallery": [
+    {
+      "src": "/images/gallery-1.jpg",
+      "alt": "Ontspanning en sport tijdens het groepsprogramma",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "src": "/images/gallery-2.jpg",
+      "alt": "Broeder in ihram voor vertrek naar de Masjid al-Haram",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "src": "/images/gallery-3.jpg",
+      "alt": "Groepsfoto bij de Masjid Quba in Madinah",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "src": "/images/gallery-4.jpg",
+      "alt": "Excursie tijdens de vrije dag van het programma",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "src": "/images/gallery-5.jpg",
+      "alt": "Les en opleiding in de moskee",
+      "width": 1200,
+      "height": 900
+    },
+    {
+      "src": "/images/gallery-6.jpg",
+      "alt": "Deelnemer tijdens de ziyarah in Makkah",
+      "width": 1200,
+      "height": 900
+    }
+  ],
+
+  "trips": [
+    {
+      "slug": "umrah-budget-november-2026",
+      "title": "Umrah Budget",
+      "subtitle": "November 2026 · 10 dagen",
+      "summary": "Onze scherpst geprijsde Umrah: alles inbegrepen, van vlucht en visum tot dagelijkse begeleiding. Ideaal voor wie voor het eerst gaat.",
+      "description": [
+        "Tien dagen Umrah zonder zorgen. Je vliegt heen en terug, verblijft in Makkah én Madinah en wordt van begin tot eind Nederlandstalig begeleid. Wij regelen het visum, de transfers en het volledige programma ter plaatse.",
+        "Naast de rituelen staat er elke dag een korte opleiding op het programma: hoe je de Umrah correct verricht, wat de betekenis is van elke stap, en hoe je het geleerde meeneemt naar huis. Daarnaast is er ruimte voor ziyarah, sport en ontspanning met de groep.",
+        "Deze reis is uitsluitend voor broeders en het aantal plekken is beperkt. Betalen in termijnen is mogelijk — laat het ons weten bij je aanmelding."
+      ],
+      "departureDate": "2026-11-07",
+      "returnDate": "2026-11-17",
+      "price": {
+        "amount": 1499.99,
+        "currency": "EUR",
+        "installmentsAvailable": true,
+        "note": "per persoon, alles inbegrepen"
+      },
+      "inclusions": [
+        "flight",
+        "stay",
+        "visa",
+        "guidance",
+        "activities",
+        "education"
+      ],
+      "coverImage": {
+        "src": "/images/trip-umrah-budget.jpg",
+        "alt": "Groep deelnemers in ihram tijdens de Umrah Budget reis",
+        "width": 1200,
+        "height": 800
+      },
+      "audience": "brothers",
+      "spotsTotal": 30,
+      "spotsLeft": 8,
+      "status": "published",
+      "featured": true,
+      "updatedAt": "2026-07-14"
+    },
+    {
+      "slug": "umrah-comfort-december-2026",
+      "title": "Umrah Comfort",
+      "subtitle": "December 2026 · 12 dagen",
+      "summary": "Zelfde programma, meer comfort: hotels op enkele minuten van de Haram, privétransfers en halfpension gedurende de hele reis.",
+      "description": [
+        "De Comfort-reis is bedoeld voor wie iets meer rust en gemak wil. Je verblijft in hotels op enkele minuten wandelen van de Masjid al-Haram en de Masjid an-Nabawi, met ontbijt en avondmaal inbegrepen.",
+        "Het inhoudelijke programma is identiek aan de Budget-reis: dagelijkse opleidingen, begeleide rituelen en een uitgebreid ziyarah-programma in beide steden.",
+        "Twaalf dagen, kleinere groep, en alle transfers met privébussen. Betalen in termijnen is ook hier mogelijk."
+      ],
+      "departureDate": "2026-12-18",
+      "returnDate": "2026-12-30",
+      "price": {
+        "amount": 2149,
+        "currency": "EUR",
+        "installmentsAvailable": true,
+        "note": "per persoon, halfpension inbegrepen"
+      },
+      "inclusions": [
+        "flight",
+        "stay",
+        "visa",
+        "guidance",
+        "activities",
+        "education",
+        "halfPension"
+      ],
+      "coverImage": {
+        "src": "/images/trip-umrah-comfort.jpg",
+        "alt": "Verlicht hotelzicht op de Masjid al-Haram tijdens de Comfort reis",
+        "width": 1200,
+        "height": 800
+      },
+      "audience": "brothers",
+      "spotsTotal": 24,
+      "spotsLeft": 15,
+      "status": "published",
+      "featured": false,
+      "updatedAt": "2026-07-09"
+    },
+    {
+      "slug": "umrah-winter-februari-2027",
+      "title": "Umrah Winter",
+      "subtitle": "Februari 2027 · 9 dagen",
+      "summary": "Korte Umrah tijdens de krokusvakantie, met aangename temperaturen en een compact programma van negen dagen.",
+      "description": [
+        "Een compacte reis van negen dagen tijdens de krokusvakantie. Het weer in Makkah en Madinah is in februari aangenaam, wat de rituelen een stuk lichter maakt.",
+        "Het programma is strak georganiseerd: aankomst, Umrah, ziyarah in beide steden en dagelijkse lessen. Ideaal als je maar beperkt verlof kan nemen.",
+        "Beperkt aantal plaatsen — deze reis wordt met één begeleider per tien deelnemers uitgevoerd."
+      ],
+      "departureDate": "2027-02-13",
+      "returnDate": "2027-02-22",
+      "price": {
+        "amount": 1649,
+        "currency": "EUR",
+        "installmentsAvailable": true,
+        "note": "per persoon"
+      },
+      "inclusions": [
+        "flight",
+        "stay",
+        "visa",
+        "guidance",
+        "activities",
+        "education"
+      ],
+      "coverImage": {
+        "src": "/images/trip-umrah-winter.jpg",
+        "alt": "Deelnemers tijdens de ziyarah op een winterse ochtend in Madinah",
+        "width": 1200,
+        "height": 800
+      },
+      "audience": "brothers",
+      "spotsTotal": 20,
+      "spotsLeft": 12,
+      "status": "published",
+      "featured": false,
+      "updatedAt": "2026-07-22"
+    },
+    {
+      "slug": "umrah-ramadan-2027",
+      "title": "Umrah Ramadan",
+      "subtitle": "Laatste tien nachten · 2027",
+      "summary": "De laatste tien nachten van Ramadan in Makkah. Itikaf, tarawih en qiyam met de groep — onze meest gevraagde reis van het jaar.",
+      "description": [
+        "De laatste tien nachten van Ramadan doorbrengen in Makkah is voor velen de reis van hun leven. Je bidt tarawih en qiyam in de Masjid al-Haram, met begeleiding en een vast programma rond de gebedstijden.",
+        "Het hotel ligt bewust dichtbij, zodat je tussen de gebeden in kan rusten. We voorzien iftar en suhoor, en er is ruimte voor itikaf tijdens de laatste nachten.",
+        "Deze reis is elk jaar als eerste volzet. Reserveer tijdig je plek via WhatsApp."
+      ],
+      "departureDate": "2027-03-11",
+      "returnDate": "2027-03-23",
+      "price": {
+        "amount": 2899,
+        "currency": "EUR",
+        "installmentsAvailable": true,
+        "note": "per persoon, iftar en suhoor inbegrepen"
+      },
+      "inclusions": [
+        "flight",
+        "stay",
+        "visa",
+        "guidance",
+        "activities",
+        "education",
+        "iftarSuhoor",
+        "transfers"
+      ],
+      "coverImage": {
+        "src": "/images/trip-umrah-ramadan.jpg",
+        "alt": "Nachtelijk zicht op de Haram tijdens de laatste tien nachten van Ramadan",
+        "width": 1200,
+        "height": 800
+      },
+      "audience": "brothers",
+      "spotsTotal": 40,
+      "spotsLeft": 3,
+      "status": "published",
+      "featured": false,
+      "updatedAt": "2026-07-20"
+    }
+  ],
+
+  "faq": [
+    {
+      "question": "Kan ik in termijnen betalen?",
+      "answer": "Ja. Bij de meeste reizen kan je gespreid betalen. Laat het weten bij je aanmelding, dan stellen we samen een plan op."
+    },
+    {
+      "question": "Is het visum inbegrepen?",
+      "answer": "Het visum is inbegrepen in de prijs en is één jaar geldig. Wij verzorgen de volledige aanvraag voor je."
+    },
+    {
+      "question": "Voor wie zijn de reizen bedoeld?",
+      "answer": "De huidige reizen zijn uitsluitend voor broeders. Heb je een vraag over andere formules? Stuur ons gerust een bericht."
+    },
+    {
+      "question": "Hoeveel plekken zijn er per reis?",
+      "answer": "We werken bewust met kleine groepen zodat iedereen persoonlijke begeleiding krijgt. Het exacte aantal staat bij elke reis vermeld."
+    }
+  ]
+}

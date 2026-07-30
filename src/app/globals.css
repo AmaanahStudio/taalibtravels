@@ -1,26 +1,189 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * TaalibTravels design tokens.
+ *
+ * De site heeft twee uiterlijken:
+ *   - dark  (standaard) — bijna zwart met een blauwe ondertoon en ijsblauw accent
+ *   - light             — crème/wit met een warm goud accent
+ *
+ * Componenten gebruiken uitsluitend de semantische tokens hieronder
+ * (bg-page, bg-surface, text-heading, text-accent, …). De concrete kleuren
+ * staan één keer in dit bestand, per thema. Zo hoeft er voor een rebrand of een
+ * derde thema geen enkel component aangepast te worden.
+ */
+@theme {
+  /* --- Vlakken --- */
+  --color-page: #090c11; /* paginakleur */
+  --color-raised: #0e131a; /* footer, zwevende kaarten */
+  --color-sunken: #141a24; /* achtergrond onder media */
+  --color-surface: #111720; /* cards en velden */
+  --color-surface-strong: #18202b; /* hover-toestand van een card */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* --- Lijnen --- */
+  --color-line: #1f2836;
+  --color-line-strong: #33404f;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* --- Tekst --- */
+  --color-heading: #eaf1f7;
+  --color-body: #b9c6d4;
+  --color-muted: #8698a8;
+
+  /* --- Accent (ijsblauw in dark, goud in light) --- */
+  --color-accent: #93c9ea;
+  --color-accent-strong: #5fabd8;
+  --color-accent-soft: #17293a; /* accent-getint vlak, bv. badges */
+
+  /* --- Primaire knop (keert om per thema) --- */
+  --color-btn: #eaf1f7;
+  --color-on-btn: #090c11;
+
+  /* --- WhatsApp-groen: merkkleur, verandert niet mee --- */
+  --color-whatsapp-400: #4ade80;
+  --color-whatsapp-500: #25d366;
+  --color-whatsapp-600: #1da851;
+  --color-on-whatsapp: #05240f;
+
+  --radius-4xl: 2rem;
+
+  --shadow-card: 0 30px 80px -45px rgb(0 0 0 / 0.9);
+  --shadow-media: 0 40px 120px -40px rgb(0 0 0 / 1);
+  --shadow-btn: 0 10px 40px -12px rgb(234 241 247 / 0.35);
+  --shadow-whatsapp: 0 10px 40px -12px rgb(37 211 102 / 0.7);
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade-in: fade-in 0.9s ease-out both;
+  --animate-float: float 7s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 1.5rem, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -0.75rem, 0);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* next/font levert de variabelen aan; `inline` lost ze op bij het genereren
+   van de font-utilities (font-display / font-sans). */
+@theme inline {
+  --font-display: var(--font-anton), "Arial Black", system-ui, sans-serif;
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Light thema. Bewust buiten elke @layer gehouden: ongelaagde regels winnen
+ * altijd van de gelaagde :root uit @theme, ongeacht specificiteit.
+ * Het attribuut wordt gezet door het script in de root layout.
+ */
+:root[data-theme="light"] {
+  --color-page: #faf7f0;
+  --color-raised: #ffffff;
+  --color-sunken: #ece4d4;
+  --color-surface: #ffffff;
+  --color-surface-strong: #f6f0e4;
+
+  --color-line: #e6dcc9;
+  --color-line-strong: #cbbb9c;
+
+  --color-heading: #191410;
+  --color-body: #4a4237;
+  --color-muted: #756a59;
+
+  --color-accent: #8a6114;
+  --color-accent-strong: #b8862b;
+  --color-accent-soft: #f6ecd8;
+
+  --color-btn: #191410;
+  --color-on-btn: #faf7f0;
+
+  --shadow-card: 0 24px 60px -40px rgb(74 56 20 / 0.35);
+  --shadow-media: 0 34px 90px -40px rgb(74 56 20 / 0.4);
+  --shadow-btn: 0 10px 40px -14px rgb(25 20 16 / 0.45);
+  --shadow-whatsapp: 0 10px 40px -14px rgb(29 168 81 / 0.55);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    color-scheme: dark;
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-page);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-page);
+  }
+
+  /* Consistente focus-ring over de hele site (toetsenbordnavigatie) */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 0.25rem;
+  }
+
+}
+
+@layer components {
+  /* Grote display-koppen zoals op de poster: strak, uppercase, licht negatief
+     gespatieerd en met een zachte gloed. */
+  .display-title {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 0.88;
+    text-shadow: 0 0 60px --alpha(var(--color-accent) / 25%);
+  }
+
+  /* In het lichte thema oogt een gloed rommelig. */
+  :root[data-theme="light"] .display-title {
+    text-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
