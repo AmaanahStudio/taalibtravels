@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
  * aspect-ratio per foto. Zo kan de eerste foto netjes twee rijen overspannen
  * zonder dat de rest van het raster verspringt.
  *
- * TODO(content): de afbeeldingen in /public/images zijn placeholders. Zet er de
- * echte reisfoto's neer (zelfde bestandsnamen) of laat ze straks uit de
- * database komen.
+ * Reken met zes foto's: met de grote tegel erbij vullen die op desktop precies
+ * drie rijen van drie, en op mobiel drie rijen van twee. Een ander aantal laat
+ * onderaan een gat achter.
  */
 export function GallerySection({
   images,
@@ -21,7 +21,7 @@ export function GallerySection({
 }: {
   images: ImageAsset[];
   className?: string;
-  /** Laat de eerste foto twee kolommen én twee rijen innemen (vanaf sm). */
+  /** Laat de eerste foto twee kolommen én twee rijen innemen (vanaf lg). */
   featureFirst?: boolean;
 }) {
   return (
@@ -39,7 +39,10 @@ export function GallerySection({
             key={image.src}
             className={cn(
               "group relative overflow-hidden rounded-2xl border border-line bg-sunken shadow-card sm:rounded-3xl",
-              featured && "col-span-2 row-span-2",
+              // Pas vanaf drie kolommen uitvergroten. In het raster van twee
+              // kolommen zou een tegel van 2x2 een oneven aantal cellen
+              // achterlaten, en dus een gat onderaan.
+              featured && "lg:col-span-2 lg:row-span-2",
             )}
           >
             <Image
@@ -53,12 +56,6 @@ export function GallerySection({
                   : "(max-width: 640px) 50vw, (max-width: 1024px) 45vw, 320px"
               }
               className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-            />
-
-            {/* Donkere gradient onderaan houdt het geheel rustig en premium */}
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-page/55 via-transparent to-transparent"
             />
           </li>
         );

@@ -58,15 +58,12 @@ export function PriceBlock({
           )}
         </div>
 
-        <div className="flex flex-col gap-3 lg:items-end">
+        <div className="flex lg:justify-end">
           <WhatsAppButton
             label="Reserveer je plek"
             message={message}
             className="w-full lg:w-auto"
           />
-          <p className="text-xs text-muted lg:text-right">
-            Nog {trip.spotsLeft} van {trip.spotsTotal} plaatsen beschikbaar
-          </p>
         </div>
       </div>
     </div>

@@ -172,6 +172,29 @@
   :root[data-theme="light"] .display-title {
     text-shadow: none;
   }
+
+  /*
+   * Het logo (public/images/logo.png) is zwarte artwork op een transparante
+   * achtergrond. Het wordt hier als masker gebruikt in plaats van als gewone
+   * afbeelding: zo neemt het de huidige tekstkleur over en is het dus zwart in
+   * het lichte thema en gebroken wit in het donkere, uit één bestand.
+   */
+  .brand-logo {
+    /* `inline-block` laat de breedte uit de verhouding volgen. Als blok zou het
+       in een flex-kolom oprekken tot de volle breedte van de container. */
+    display: inline-block;
+    align-self: flex-start;
+    aspect-ratio: 582 / 388;
+    background-color: currentColor;
+    -webkit-mask-image: url("/images/logo.png");
+    mask-image: url("/images/logo.png");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

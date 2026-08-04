@@ -9,7 +9,6 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "typegen": "next typegen",
-    "placeholders": "node scripts/generate-placeholders.mjs",
     "hero-video": "node scripts/build-hero-video.mjs"
   },
   "dependencies": {

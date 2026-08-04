@@ -140,7 +140,7 @@ export function TripDetail({ trip }: { trip: Trip }) {
           title="Foto's"
           intro="Beelden van eerdere reizen: de rituelen, de lessen en de momenten ertussenin."
         />
-        <GallerySection images={trip.gallery} className="mt-10" />
+        <GallerySection images={trip.gallery} featureFirst className="mt-10" />
       </Section>
 
       {/* Afsluitende oproep: wie helemaal doorscrolt hoeft niet terug omhoog. */}
@@ -154,7 +154,6 @@ export function TripDetail({ trip }: { trip: Trip }) {
               : `Stuur ons een bericht en we bevestigen je plek voor ${trip.title}.`
           }
           message={reservationMessage}
-          footnote={`Nog ${trip.spotsLeft} van ${trip.spotsTotal} plaatsen beschikbaar.`}
         />
       </Section>
     </>

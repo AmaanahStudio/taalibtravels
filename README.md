@@ -40,7 +40,6 @@ De site draait dan op http://localhost:3000.
 | `npm run lint`         | ESLint                                                |
 | `npm run typecheck`    | TypeScript zonder output                              |
 | `npm run typegen`      | Genereert de `PageProps`/`LayoutProps` route-types    |
-| `npm run placeholders` | Hergenereert de placeholder-foto's in `public/images` |
 | `npm run hero-video`   | Bouwt de videocompilatie voor de hero (zie onder)      |
 
 > `npm run typecheck` heeft de gegenereerde route-types nodig. Draai eerst
@@ -80,17 +79,40 @@ src/
     └── build-hero-video.mjs
 ```
 
-## Foto's vervangen
+## Foto's
 
-De bestanden in `public/images` zijn gegenereerde placeholders (behalve
-`hero-poster.jpg`). Zet er echte foto's neer met dezelfde bestandsnamen, of pas
-de paden aan in `src/lib/mock-data.ts`. Vergeet de `alt`-teksten niet — die
-staan bij de data.
+Alle foto's staan in `public/images` en worden aangestuurd vanuit
+`content.json`. Een foto toevoegen of vervangen:
+
+1. Zet het bestand in `public/images`. Schaal het eerst terug — de lange zijde
+   op ~1600px en JPEG-kwaliteit 80 levert scherpe beelden van 100–300 KB.
+2. Voeg hem toe aan `gallery` (of zet het pad in de `coverImage` van een reis)
+   met de **echte** afmetingen: die bepalen de verhouding waarmee Next.js de
+   ruimte reserveert, dus een verkeerde waarde laat de pagina verspringen.
+3. Schrijf een `alt` die beschrijft wat er te zien is.
+
+De galerij bestaat uit twee lagen. De `gallery` bovenin `content.json` is de
+gedeelde set en staat op de homepage. Krijgt een reis een eigen `gallery`, dan
+gebruikt die reis zijn eigen foto's — zo toont elke reispagina iets anders. Laat
+je hem weg, dan valt die reis terug op de gedeelde set.
+
+Drie dingen om rekening mee te houden:
+
+- **Houd elke `gallery` op zes foto's.** Met de grote tegel erbij vullen die
+  precies drie rijen van drie op desktop en drie rijen van twee op mobiel. Bij
+  een ander aantal blijft er onderaan een lege cel over.
+- **Gebruik liggende foto's.** De tegels zijn breder dan hoog en snijden bij met
+  `object-cover`; van een staande foto blijft dan alleen een smalle band over.
+  Snijd ze daarom vooraf op 3:2 bij, zodat jij bepaalt wat er in beeld komt en
+  niet de browser.
+- **Snijd gecentreerd bij, niet automatisch.** De "attention"-modus van
+  beeldbewerkers kiest het contrastrijkste deel, en dat is bij een avondfoto
+  vaak juist de lege lucht of een donkere helling in plaats van de mensen.
 
 ## Hero-video
 
 De hero op de homepage toont `public/videos/hero-compilatie.mp4`: een montage
-van losse telefoonopnames, staand formaat (576×1024), zonder audiotrack.
+van losse telefoonopnames, staand 4:5 (720×900), zonder audiotrack.
 `public/images/hero-poster.jpg` is het poster-frame en komt uit diezelfde
 montage — die twee horen altijd bij elkaar, anders springt het beeld op het
 moment dat de video start.
@@ -101,14 +123,20 @@ Beide worden gegenereerd door één script:
 npm run hero-video
 ```
 
-Pas de lijst `SOURCES` boven in `scripts/build-hero-video.mjs` aan om andere of
-meer fragmenten te gebruiken. Verder staan daar drie knoppen:
+Pas `SOURCE_DIR` en `SOURCES` boven in `scripts/build-hero-video.mjs` aan om
+andere fragmenten te gebruiken. Verder staan daar drie knoppen:
 
 | Constante           | Doet                                                          |
 | ------------------- | ------------------------------------------------------------- |
 | `MAX_CLIP_SECONDS`  | Maximale duur per fragment; kortere clips blijven volledig     |
 | `CRF`               | Kwaliteit vs. bestandsgrootte (hoger = kleiner, 28–32 zinnig)  |
 | `POSTER_AT`         | Seconde waaruit het poster-frame gegrepen wordt                |
+
+Bronnen mogen staand én liggend door elkaar. Een staand fragment wordt
+bijgesneden tot het kader vol is; een liggend fragment zou daarbij ruim de helft
+verliezen en wordt daarom passend geschaald met een vervaagde kopie van zichzelf
+als achtergrond. Zet een staand fragment vooraan en richt `POSTER_AT` daarop —
+anders krijgt het poster-frame die vervaagde balken.
 
 Het script schaalt en snijdt elk fragment bij naar hetzelfde staande kader en
 trekt de framerate gelijk. Zonder die stap weigert ffmpeg bronnen met

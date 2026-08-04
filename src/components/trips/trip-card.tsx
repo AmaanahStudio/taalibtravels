@@ -36,11 +36,6 @@ export function TripCard({
           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 384px"
           className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-page via-page/30 to-transparent"
-        />
-
         {(trip.status === "sold-out" || almostFull) && (
           <div className="absolute inset-x-4 top-4 flex flex-wrap gap-2">
             {trip.status === "sold-out" ? (

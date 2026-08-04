@@ -72,40 +72,40 @@
 
   "gallery": [
     {
-      "src": "/images/gallery-1.jpg",
-      "alt": "Ontspanning en sport tijdens het groepsprogramma",
-      "width": 1200,
-      "height": 900
+      "src": "/images/les-pilaren.jpg",
+      "alt": "Les tussen de pilaren van de moskee",
+      "width": 1400,
+      "height": 933
     },
     {
-      "src": "/images/gallery-2.jpg",
-      "alt": "Broeder in ihram voor vertrek naar de Masjid al-Haram",
-      "width": 1200,
-      "height": 900
+      "src": "/images/zwembad-bal.jpg",
+      "alt": "Deelnemer met een bal in het zwembad",
+      "width": 1400,
+      "height": 933
     },
     {
-      "src": "/images/gallery-3.jpg",
-      "alt": "Groepsfoto bij de Masjid Quba in Madinah",
-      "width": 1200,
-      "height": 900
+      "src": "/images/kart.jpg",
+      "alt": "Deelnemer achter het stuur op de kartbaan",
+      "width": 1400,
+      "height": 933
     },
     {
-      "src": "/images/gallery-4.jpg",
-      "alt": "Excursie tijdens de vrije dag van het programma",
-      "width": 1200,
-      "height": 900
+      "src": "/images/uitzicht-rots.jpg",
+      "alt": "Uitzicht over Makkah vanaf de rotsen",
+      "width": 1400,
+      "height": 933
     },
     {
-      "src": "/images/gallery-5.jpg",
-      "alt": "Les en opleiding in de moskee",
-      "width": 1200,
-      "height": 900
+      "src": "/images/avond-nabawi.jpg",
+      "alt": "De groep 's avonds bij de Masjid an-Nabawi",
+      "width": 1400,
+      "height": 933
     },
     {
-      "src": "/images/gallery-6.jpg",
-      "alt": "Deelnemer tijdens de ziyarah in Makkah",
-      "width": 1200,
-      "height": 900
+      "src": "/images/klokkentoren.jpg",
+      "alt": "De klokkentoren van Makkah tegen een blauwe lucht",
+      "width": 1400,
+      "height": 933
     }
   ],
 
@@ -138,10 +138,48 @@
       ],
       "coverImage": {
         "src": "/images/trip-umrah-budget.jpg",
-        "alt": "Groep deelnemers in ihram tijdens de Umrah Budget reis",
-        "width": 1200,
-        "height": 800
+        "alt": "Groep deelnemers in ihram voor de verlichte Masjid al-Haram",
+        "width": 1600,
+        "height": 1067
       },
+      "gallery": [
+        {
+          "src": "/images/les-pilaren.jpg",
+          "alt": "Les tussen de pilaren van de moskee",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/minaretten-nabawi.jpg",
+          "alt": "De minaretten van de Masjid an-Nabawi",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/groep-samen.jpg",
+          "alt": "De groep bij elkaar voor vertrek",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/zwembad-plons.jpg",
+          "alt": "Deelnemers in het zwembad tijdens een vrije middag",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/bij-de-berg.jpg",
+          "alt": "Deelnemer bij de berg tijdens de ziyarah",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/quba-zonsondergang.jpg",
+          "alt": "Bij de Masjid Quba bij zonsondergang",
+          "width": 1400,
+          "height": 933
+        }
+      ],
       "audience": "brothers",
       "spotsTotal": 30,
       "spotsLeft": 8,
@@ -178,10 +216,48 @@
       ],
       "coverImage": {
         "src": "/images/trip-umrah-comfort.jpg",
-        "alt": "Verlicht hotelzicht op de Masjid al-Haram tijdens de Comfort reis",
-        "width": 1200,
-        "height": 800
+        "alt": "Groep deelnemers in ihram in de Masjid al-Haram",
+        "width": 1600,
+        "height": 1067
       },
+      "gallery": [
+        {
+          "src": "/images/les-geleerde.jpg",
+          "alt": "Een geleerde geeft les in de moskee",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/klokkentoren.jpg",
+          "alt": "De klokkentoren van Makkah tegen een blauwe lucht",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/haram-bovenaf.jpg",
+          "alt": "De Masjid al-Haram van bovenaf in de avond",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/ihram-onderweg.jpg",
+          "alt": "In ihram onderweg naar de moskee",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/zwembad-rust.jpg",
+          "alt": "Even afkoelen in het zwembad",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/ornament.jpg",
+          "alt": "Vergulde versiering in de moskee",
+          "width": 1400,
+          "height": 933
+        }
+      ],
       "audience": "brothers",
       "spotsTotal": 24,
       "spotsLeft": 15,
@@ -217,10 +293,48 @@
       ],
       "coverImage": {
         "src": "/images/trip-umrah-winter.jpg",
-        "alt": "Deelnemers tijdens de ziyarah op een winterse ochtend in Madinah",
-        "width": 1200,
-        "height": 800
+        "alt": "Groep deelnemers bij de Masjid Quba in Madinah",
+        "width": 1600,
+        "height": 1067
       },
+      "gallery": [
+        {
+          "src": "/images/uitzicht-rots.jpg",
+          "alt": "Uitzicht over Makkah vanaf de rotsen",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/kart.jpg",
+          "alt": "Deelnemer achter het stuur op de kartbaan",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/schietbaan.jpg",
+          "alt": "Deelnemers tijdens een activiteit in de buitenlucht",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/zwembad-bal.jpg",
+          "alt": "Deelnemer met een bal in het zwembad",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/gesprek.jpg",
+          "alt": "Twee deelnemers in gesprek",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/water.jpg",
+          "alt": "Zwemmen tijdens de vrije middag",
+          "width": 1400,
+          "height": 933
+        }
+      ],
       "audience": "brothers",
       "spotsTotal": 20,
       "spotsLeft": 12,
@@ -258,10 +372,48 @@
       ],
       "coverImage": {
         "src": "/images/trip-umrah-ramadan.jpg",
-        "alt": "Nachtelijk zicht op de Haram tijdens de laatste tien nachten van Ramadan",
-        "width": 1200,
-        "height": 800
+        "alt": "Zitting met geleerden tijdens het avondprogramma",
+        "width": 1600,
+        "height": 1067
       },
+      "gallery": [
+        {
+          "src": "/images/kaaba-deur.jpg",
+          "alt": "De gouden deur van de Kaaba",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/haram-nacht.jpg",
+          "alt": "De Masjid al-Haram verlicht in de nacht",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/avond-nabawi.jpg",
+          "alt": "De groep 's avonds bij de Masjid an-Nabawi",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/bibliotheek.jpg",
+          "alt": "Bibliotheek met islamitische werken",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/bij-de-kaaba.jpg",
+          "alt": "Bij de Kaaba in de Masjid al-Haram",
+          "width": 1400,
+          "height": 933
+        },
+        {
+          "src": "/images/deelnemer-portret.jpg",
+          "alt": "Deelnemer tijdens het avondprogramma",
+          "width": 1400,
+          "height": 933
+        }
+      ],
       "audience": "brothers",
       "spotsTotal": 40,
       "spotsLeft": 3,

@@ -3,9 +3,14 @@
  *
  * Wat het doet:
  *   - neemt van elke bronvideo maximaal MAX_CLIP_SECONDS
- *   - zet alles om naar hetzelfde portretformaat (576x1024, 30 fps)
+ *   - zet alles om naar hetzelfde staande kader (WIDTH x HEIGHT, FPS)
  *   - plakt de fragmenten achter elkaar, zonder audiotrack
  *   - schrijft public/videos/hero-compilatie.mp4 en een bijpassend poster-frame
+ *
+ * Staande en liggende bronnen worden verschillend behandeld. Een staand
+ * fragment wordt bijgesneden tot het kader vol is. Een liggend fragment zou
+ * daarbij ruim de helft van het beeld verliezen, dus dat wordt passend
+ * geschaald met een uitvergrote, vervaagde kopie van zichzelf als achtergrond.
  *
  * Gebruik:
  *   node scripts/build-hero-video.mjs
@@ -13,7 +18,8 @@
  * Vereist ffmpeg. Het script zoekt eerst `ffmpeg` in PATH en valt anders terug
  * op het npm-pakket `ffmpeg-static` (npm i -D ffmpeg-static).
  *
- * Nieuwe montage? Pas SOURCES aan — dat is de enige lijst die telt.
+ * Nieuwe montage? Pas SOURCE_DIR en SOURCES aan — dat zijn de enige lijsten
+ * die tellen.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
@@ -24,34 +30,42 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Maximale duur per fragment. Kortere video's worden in hun geheel gebruikt. */
-const MAX_CLIP_SECONDS = 10;
+const MAX_CLIP_SECONDS = 8;
 
-/** Uitvoerformaat: staand, zoals de hero-card op de site. */
-const WIDTH = 576;
-const HEIGHT = 1024;
+/** Uitvoerformaat: staand 4:5, gelijk aan de hero-card op de site. */
+const WIDTH = 720;
+const HEIGHT = 900;
 const FPS = 30;
 
-/** Hoger = kleiner bestand, lager = betere kwaliteit. 28–32 is een zinnig bereik. */
-const CRF = 30;
+/**
+ * Hoger = kleiner bestand, lager = betere kwaliteit. 28–32 is een zinnig bereik.
+ * De video speelt automatisch af, dus elke bezoeker downloadt hem: houd het
+ * eindbestand bij voorkeur onder ~5 MB.
+ */
+const CRF = 32;
 
-/** Seconde waaruit het poster-frame gegrepen wordt. */
-const POSTER_AT = 2;
+/**
+ * Seconde waaruit het poster-frame gegrepen wordt. Kies een moment in een
+ * staand fragment: dat vult het kader, terwijl een liggend fragment balken
+ * heeft — en dit frame is het eerste wat elke bezoeker ziet.
+ */
+const POSTER_AT = 3;
 
-const SOURCE_DIR = "C:/Users/muham/Downloads";
+const DOWNLOADS = "C:/Users/muham/Downloads";
+const CLIPS_DIR = path.join(DOWNLOADS, "wetransfer_img_0081-mov_2026-08-01_1936");
 
-/** Volgorde van de fragmenten in de compilatie. */
+/**
+ * Volgorde van de fragmenten. De compilatie opent staand, zodat het beeld
+ * meteen het hele kader vult, en het enige liggende fragment staat achteraan.
+ */
 const SOURCES = [
-  "WhatsApp Video 2026-07-26 at 22.07.06.mp4",
-  "WhatsApp Video 2026-07-26 at 22.07.10.mp4",
-  "WhatsApp Video 2026-07-26 at 22.07.11.mp4",
-  "WhatsApp Video 2026-07-26 at 22.07.12.mp4",
-  "WhatsApp Video 2026-07-26 at 22.07.13.mp4",
-  "WhatsApp Video 2026-07-26 at 22.07.14.mp4",
-  "WhatsApp Video 2026-07-26 at 22.07.15.mp4",
-  "WhatsApp Video 2026-07-26 at 22.07.16.mp4",
-  "WhatsApp Video 2026-07-26 at 22.07.18.mp4",
-  "WhatsApp Video 2026-07-26 at 20.50.07.mp4",
-].map((name) => path.join(SOURCE_DIR, name));
+  path.join(CLIPS_DIR, "IMG_0413.mov"), // staand — les in de moskee
+  path.join(CLIPS_DIR, "IMG_1076.mov"), // staand — deur van de Kaaba
+  path.join(CLIPS_DIR, "IMG_0345.mov"), // staand — minaretten
+  path.join(DOWNLOADS, "WhatsApp Video 2026-07-26 at 20.50.07.mp4"), // staand
+  path.join(CLIPS_DIR, "IMG_0229.mov"), // staand
+  path.join(CLIPS_DIR, "IMG_0207.mov"), // liggend — avond
+];
 
 function findFfmpeg() {
   try {
@@ -70,6 +84,32 @@ function findFfmpeg() {
   }
 }
 
+/**
+ * Leest de weergave-afmetingen uit. Telefoons slaan staand beeld vaak liggend
+ * op met een rotatievlag; ffmpeg draait dat bij het decoderen recht, dus de
+ * opgeslagen afmetingen zeggen op zichzelf niets over de oriëntatie.
+ */
+function isPortrait(ffmpeg, file) {
+  let out = "";
+  try {
+    execFileSync(ffmpeg, ["-hide_banner", "-i", file], { stdio: "pipe" });
+  } catch (err) {
+    out = String(err.stderr ?? "");
+  }
+
+  const line = out.split("\n").find((l) => l.includes("Video:")) ?? "";
+  const dims = line.match(/, (\d{2,5})x(\d{2,5})/);
+  const rotated = /displaymatrix: rotation of -?(90|270)/.test(out);
+
+  if (!dims) throw new Error(`Kon de afmetingen van ${path.basename(file)} niet lezen.`);
+
+  const [w, h] = rotated
+    ? [Number(dims[2]), Number(dims[1])]
+    : [Number(dims[1]), Number(dims[2])];
+
+  return h > w;
+}
+
 const missing = SOURCES.filter((file) => !existsSync(file));
 if (missing.length > 0) {
   console.error("Deze bronbestanden ontbreken:");
@@ -83,12 +123,6 @@ const videoOut = path.join(outDir, "hero-compilatie.mp4");
 const posterOut = path.join(ROOT, "public", "images", "hero-poster.jpg");
 mkdirSync(outDir, { recursive: true });
 
-/*
- * Elk fragment wordt eerst genormaliseerd: schalen tot het kader gevuld is,
- * bijsnijden naar het midden, en gelijktrekken qua framerate en pixelformaat.
- * Zonder die stap weigert `concat` bronnen met afwijkende afmetingen.
- * ffmpeg past de rotatie uit de metadata automatisch toe bij het decoderen.
- */
 const inputArgs = SOURCES.flatMap((file) => [
   "-t",
   String(MAX_CLIP_SECONDS),
@@ -96,11 +130,26 @@ const inputArgs = SOURCES.flatMap((file) => [
   file,
 ]);
 
-const normalise = SOURCES.map(
-  (_, i) =>
-    `[${i}:v]scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,` +
-    `crop=${WIDTH}:${HEIGHT},fps=${FPS},setsar=1,format=yuv420p[v${i}]`,
-).join(";");
+const normalise = SOURCES.map((file, i) => {
+  const common = `fps=${FPS},setsar=1,format=yuv420p`;
+
+  if (isPortrait(ffmpeg, file)) {
+    // Vult het kader; er gaat alleen wat boven- en onderkant af.
+    return (
+      `[${i}:v]scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,` +
+      `crop=${WIDTH}:${HEIGHT},${common}[v${i}]`
+    );
+  }
+
+  // Liggend: volledig beeld in het midden, vervaagde uitsnede erachter.
+  return (
+    `[${i}:v]split=2[bg${i}][fg${i}];` +
+    `[bg${i}]scale=${WIDTH}:${HEIGHT}:force_original_aspect_ratio=increase,` +
+    `crop=${WIDTH}:${HEIGHT},gblur=sigma=28[bgb${i}];` +
+    `[fg${i}]scale=${WIDTH}:-2[fgs${i}];` +
+    `[bgb${i}][fgs${i}]overlay=(W-w)/2:(H-h)/2,${common}[v${i}]`
+  );
+}).join(";");
 
 const concat =
   SOURCES.map((_, i) => `[v${i}]`).join("") +
