@@ -30,27 +30,49 @@ pagina is statisch. De site kan als statische export gehost worden.
 
 ### Content is data, geen code
 
-**Alle** teksten, reizen, prijzen en bedrijfsgegevens staan in
-[src/data/content.json](src/data/content.json). Content wijzigen hoort nul componenten
-te raken. [src/lib/content.ts](src/lib/content.ts) is de enige module die dat bestand
+**Alle** teksten, reizen, prijzen en bedrijfsgegevens staan als JSON in
+[src/data](src/data), opgesplitst per onderwerp. Content wijzigen hoort nul componenten
+te raken. [src/lib/content.ts](src/lib/content.ts) is de enige module die die bestanden
 kent; [src/lib/types.ts](src/lib/types.ts) beschrijft de vorm ná het uitpakken.
 
-Bij het importeren van `content.ts` wordt de `TRIPS`-array één keer op module-niveau
-opgebouwd — drafts eruit, `inclusions`-id's opgezocht, gesorteerd op `departureDate`.
-Gevolgen om te kennen:
+| Bestand                 | Bevat                                                    |
+| ----------------------- | -------------------------------------------------------- |
+| `site.json`             | Naam, tagline, WhatsApp, e-mail, Instagram, domein        |
+| `navigation.json`       | De links in navigatiebalk en footer                       |
+| `inclusions.json`       | De "Inclusief?"-regels, per id                            |
+| `images.json`           | Elke foto één keer: `src`, `alt`, `width`, `height`, per id |
+| `gallery.json`          | Gedeelde fotopool — een lijst foto-id's                   |
+| `faq.json`              | Veelgestelde vragen                                       |
+| `trips/<slug>.json`     | Eén bestand per reis                                      |
+| `trips/index.ts`        | Register: welke reisbestanden bestaan                     |
 
-- Een verwijzing naar een niet-bestaande `inclusion`-id **gooit tijdens de build**
-  (`resolveInclusions`), bewust geen stille lege lijst.
-- De JSON-import wordt gecast met `as unknown as RawContent`; TypeScript leest uit JSON
-  alleen brede types. De typecheck bewaakt dit bestand dus niet — een vormfout komt pas
-  bij de build of in de UI naar boven.
-- `status: "draft"` verbergt een reis, `featured: true` kiest de homepage-hero (bij één
-  reis), een reis zonder eigen `gallery` valt terug op de gedeelde pool.
+Twee dingen staan bewust één keer beschreven en worden elders alleen met een **id**
+aangeroepen: de inclusies en de foto's. Een reis heeft dus `"coverImage": "trip-umrah-budget"`
+en `"gallery": ["les-pilaren", …]`, geen ingesloten objecten. Een alt-tekst of afmeting
+corrigeer je daardoor op één plek.
+
+Bij het importeren van `content.ts` wordt de `TRIPS`-array één keer op module-niveau
+opgebouwd — drafts eruit, id's opgezocht, gesorteerd op `departureDate`. Gevolgen om te
+kennen:
+
+- Een verwijzing naar een niet-bestaande `inclusion`- of foto-id **gooit tijdens de build**
+  (`resolveInclusions`, `resolveImage`), bewust geen stille lege lijst. Datzelfde geldt voor
+  een galerij die geen zes foto's telt, twee reizen met dezelfde slug, en meer dan één reis
+  op `featured` (`resolveGallery`, `assertTripsConsistent`).
+- `inclusions.json` en de reisbestanden worden gecast met `as unknown as`; TypeScript leest
+  uit JSON alleen brede types (`"EUR"` wordt `string`). De typecheck bewaakt die vorm dus
+  niet — de resolvers hierboven doen dat wel, bij de build.
+- `status: "draft"` verbergt een reis, `featured: true` kiest de homepage-hero, een reis
+  zonder eigen `gallery` valt terug op de gedeelde pool. Drafts worden er vóór het
+  uitpakken uitgefilterd, dus een half afgewerkte reis breekt de build niet.
+- Een reis toevoegen: bestand aanmaken onder `trips/`, plus één import en één regel in
+  `trips/index.ts`. Dat register staat er expliciet omdat `content.ts` ook in een client
+  component belandt (de navbar) — de map uitlezen met `fs` kan dus niet.
 
 Consumeer content via de functies uit `content.ts` (`getTrips`, `getTripBySlug`,
 `getFeaturedTrip`, `getTripSlugs`, `getStartingPrice`, `getGallery`) en de constanten
-`SITE` / `NAV_LINKS` / `FAQ` — importeer nooit `content.json` rechtstreeks in een
-component.
+`SITE` / `NAV_LINKS` / `FAQ` — importeer nooit een bestand uit `src/data` rechtstreeks in
+een component.
 
 ### Thema's en design tokens
 
@@ -89,7 +111,7 @@ byte-voor-byte hetzelfde produceren. Gebruik `formatDateNumeric`, `formatDateLon
 
 Geen formulieren, dus ook geen types voor ingevulde velden. `whatsappUrl(message?)` in
 `utils.ts` bouwt een `wa.me`-link met voorgevuld bericht; het nummer staat één keer in
-`content.json` onder `site.whatsapp`. `WhatsAppCta` is het blok onderaan reis- en
+`site.json` onder `whatsapp`. `WhatsAppCta` is het blok onderaan reis- en
 contactpagina, `WhatsAppButton` de losse knop — het bericht geef je mee op de plek van
 aanroep.
 
@@ -102,7 +124,7 @@ aanroep.
   (`http`, `mailto`, `tel`) omzeilen de router automatisch.
 - Iconen zijn inline SVG's in [icons.tsx](src/components/ui/icons.tsx). De `IconKey`-union
   in `types.ts` en de `INCLUSION_ICONS`-map moeten synchroon blijven met de `icon`-waarden
-  in `content.json`.
+  in `inclusions.json`.
 
 ### Next.js 16 specifics
 
@@ -121,11 +143,13 @@ een `package-lock.json` in de home-directory staat.
 
 ## Foto's en video
 
-Foto's staan in `public/images` en worden aangestuurd vanuit `content.json`. Zet altijd
-de **echte** afmetingen in `width`/`height` — die bepalen de gereserveerde ruimte, een
-verkeerde waarde laat de pagina verspringen. Houd elke `gallery` op **zes** liggende
-(3:2) foto's: met de grote tegel erbij vult dat precies het raster, bij een ander aantal
-blijft er een lege cel over.
+Foto's staan in `public/images` en worden beschreven in `images.json`, één keer per foto,
+met de bestandsnaam zonder extensie als id. Galerijen en `coverImage` verwijzen alleen naar
+die id's. Zet altijd de **echte** afmetingen in `width`/`height` — die bepalen de
+gereserveerde ruimte, een verkeerde waarde laat de pagina verspringen. Houd elke `gallery`
+op **zes** liggende (3:2) foto's: met de grote tegel erbij vult dat precies het raster, bij
+een ander aantal blijft er een lege cel over — `resolveGallery` breekt de build als het er
+niet zes zijn.
 
 `scripts/build-hero-video.mjs` heeft een hardgecodeerd `CLIPS_DIR` naar een lokale
 Downloads-map; `npm run hero-video` draait niet zonder die constanten eerst aan te passen.

@@ -101,9 +101,9 @@ export function TransportIcon(props: IconProps) {
 }
 
 /**
- * Koppelt een `IconKey` uit de data aan een component. Zo bepaalt de (straks:
- * uit content.json komende) data welk icoon getoond wordt, zonder dat de UI een
- * lange if/else nodig heeft.
+ * Koppelt een `IconKey` uit de data aan een component. Zo bepaalt de `icon`-waarde
+ * in `inclusions.json` welk icoon getoond wordt, zonder dat de UI een lange
+ * if/else nodig heeft.
  */
 export const INCLUSION_ICONS: Record<
   IconKey,

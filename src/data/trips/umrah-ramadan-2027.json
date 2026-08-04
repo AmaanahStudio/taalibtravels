@@ -1,0 +1,44 @@
+{
+  "slug": "umrah-ramadan-2027",
+  "title": "Umrah Ramadan",
+  "subtitle": "Laatste tien nachten · 2027",
+  "summary": "De laatste tien nachten van Ramadan in Makkah. Itikaf, tarawih en qiyam met de groep — onze meest gevraagde reis van het jaar.",
+  "description": [
+    "De laatste tien nachten van Ramadan doorbrengen in Makkah is voor velen de reis van hun leven. Je bidt tarawih en qiyam in de Masjid al-Haram, met begeleiding en een vast programma rond de gebedstijden.",
+    "Het hotel ligt bewust dichtbij, zodat je tussen de gebeden in kan rusten. We voorzien iftar en suhoor, en er is ruimte voor itikaf tijdens de laatste nachten.",
+    "Deze reis is elk jaar als eerste volzet. Reserveer tijdig je plek via WhatsApp."
+  ],
+  "departureDate": "2027-03-11",
+  "returnDate": "2027-03-23",
+  "price": {
+    "amount": 2899,
+    "currency": "EUR",
+    "installmentsAvailable": true,
+    "note": "per persoon, iftar en suhoor inbegrepen"
+  },
+  "inclusions": [
+    "flight",
+    "stay",
+    "visa",
+    "guidance",
+    "activities",
+    "education",
+    "iftarSuhoor",
+    "transfers"
+  ],
+  "coverImage": "trip-umrah-ramadan",
+  "gallery": [
+    "kaaba-deur",
+    "haram-nacht",
+    "avond-nabawi",
+    "bibliotheek",
+    "bij-de-kaaba",
+    "deelnemer-portret"
+  ],
+  "audience": "brothers",
+  "spotsTotal": 40,
+  "spotsLeft": 3,
+  "status": "published",
+  "featured": false,
+  "updatedAt": "2026-07-20"
+}

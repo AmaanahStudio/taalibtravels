@@ -1,10 +1,10 @@
 /**
  * Domeinmodellen voor TaalibTravels.
  *
- * Dit is een statische site zonder backend: alle content staat in
- * `src/data/content.json` en wordt bij het bouwen ingelezen. Deze types
- * beschrijven de vorm van die data nadat `src/lib/content.ts` hem heeft
- * uitgepakt.
+ * Dit is een statische site zonder backend: alle content staat als JSON in
+ * `src/data` en wordt bij het bouwen ingelezen. Deze types beschrijven de vorm
+ * van die data nadat `src/lib/content.ts` hem heeft uitgepakt — in de bestanden
+ * zelf staan inclusies en foto's als id's, hier als volledige objecten.
  */
 
 /** `draft` verbergt een reis zonder hem uit het JSON-bestand te halen. */
@@ -24,6 +24,12 @@ export type IconKey =
   | "meals"
   | "transport";
 
+/**
+ * Eén foto. Net als de inclusies staan deze één keer beschreven, in
+ * `images.json` met de sleutel als id; reizen en de gedeelde pool verwijzen er
+ * enkel naar. Zo staat een alt-tekst of afmeting op één plek, ook wanneer
+ * dezelfde foto bij meerdere reizen hoort.
+ */
 export interface ImageAsset {
   /** Pad onder /public. */
   src: string;
@@ -35,9 +41,9 @@ export interface ImageAsset {
 /**
  * Eén regel uit de "Inclusief?"-lijst.
  *
- * In het JSON-bestand staan deze één keer onder `inclusions`, met de sleutel
- * als id. Een reis verwijst er enkel naar, zodat dezelfde tekst niet bij elke
- * reis herhaald hoeft te worden.
+ * In `inclusions.json` staan deze één keer, met de sleutel als id. Een reis
+ * verwijst er enkel naar, zodat dezelfde tekst niet bij elke reis herhaald
+ * hoeft te worden.
  */
 export interface TripInclusion {
   id: string;
@@ -71,7 +77,7 @@ export interface Trip {
   price: TripPrice;
   inclusions: TripInclusion[];
   coverImage: ImageAsset;
-  /** Eigen foto's, of de gedeelde fotopool als de reis er geen heeft. */
+  /** Eigen foto's, of de gedeelde fotopool als de reis er geen heeft. Altijd zes. */
   gallery: ImageAsset[];
   audience: TripAudience;
   spotsTotal: number;

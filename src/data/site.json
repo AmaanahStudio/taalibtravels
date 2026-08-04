@@ -1,0 +1,16 @@
+{
+  "name": "TaalibTravels",
+  "tagline": "Umrah reizen met begeleiding",
+  "description": "TaalibTravels organiseert betaalbare Umrah-reizen met vlucht, verblijf in Makkah en Madinah, visum, dagelijkse begeleiding en opleidingen. Reserveer je plek via WhatsApp.",
+  "url": "https://www.taalibtravels.com",
+  "locale": "nl_BE",
+  "email": "info@taalibtravels.com",
+  "whatsapp": {
+    "display": "0489 28 94 90",
+    "international": "32489289490"
+  },
+  "instagram": {
+    "handle": "@taalibtravels",
+    "url": "https://www.instagram.com/taalibtravels"
+  }
+}

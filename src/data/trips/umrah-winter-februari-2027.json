@@ -1,0 +1,35 @@
+{
+  "slug": "umrah-winter-februari-2027",
+  "title": "Umrah Winter",
+  "subtitle": "Februari 2027 · 9 dagen",
+  "summary": "Korte Umrah tijdens de krokusvakantie, met aangename temperaturen en een compact programma van negen dagen.",
+  "description": [
+    "Een compacte reis van negen dagen tijdens de krokusvakantie. Het weer in Makkah en Madinah is in februari aangenaam, wat de rituelen een stuk lichter maakt.",
+    "Het programma is strak georganiseerd: aankomst, Umrah, ziyarah in beide steden en dagelijkse lessen. Ideaal als je maar beperkt verlof kan nemen.",
+    "Beperkt aantal plaatsen — deze reis wordt met één begeleider per tien deelnemers uitgevoerd."
+  ],
+  "departureDate": "2027-02-13",
+  "returnDate": "2027-02-22",
+  "price": {
+    "amount": 1649,
+    "currency": "EUR",
+    "installmentsAvailable": true,
+    "note": "per persoon"
+  },
+  "inclusions": ["flight", "stay", "visa", "guidance", "activities", "education"],
+  "coverImage": "trip-umrah-winter",
+  "gallery": [
+    "uitzicht-rots",
+    "kart",
+    "schietbaan",
+    "zwembad-bal",
+    "gesprek",
+    "water"
+  ],
+  "audience": "brothers",
+  "spotsTotal": 20,
+  "spotsLeft": 12,
+  "status": "published",
+  "featured": false,
+  "updatedAt": "2026-07-22"
+}

@@ -1,0 +1,170 @@
+{
+  "avond-nabawi": {
+    "src": "/images/avond-nabawi.jpg",
+    "alt": "De groep 's avonds bij de Masjid an-Nabawi",
+    "width": 1400,
+    "height": 933
+  },
+  "bibliotheek": {
+    "src": "/images/bibliotheek.jpg",
+    "alt": "Bibliotheek met islamitische werken",
+    "width": 1400,
+    "height": 933
+  },
+  "bij-de-berg": {
+    "src": "/images/bij-de-berg.jpg",
+    "alt": "Deelnemer bij de berg tijdens de ziyarah",
+    "width": 1400,
+    "height": 933
+  },
+  "bij-de-kaaba": {
+    "src": "/images/bij-de-kaaba.jpg",
+    "alt": "Bij de Kaaba in de Masjid al-Haram",
+    "width": 1400,
+    "height": 933
+  },
+  "deelnemer-portret": {
+    "src": "/images/deelnemer-portret.jpg",
+    "alt": "Deelnemer tijdens het avondprogramma",
+    "width": 1400,
+    "height": 933
+  },
+  "gesprek": {
+    "src": "/images/gesprek.jpg",
+    "alt": "Twee deelnemers in gesprek",
+    "width": 1400,
+    "height": 933
+  },
+  "groep-samen": {
+    "src": "/images/groep-samen.jpg",
+    "alt": "De groep bij elkaar voor vertrek",
+    "width": 1400,
+    "height": 933
+  },
+  "haram-bovenaf": {
+    "src": "/images/haram-bovenaf.jpg",
+    "alt": "De Masjid al-Haram van bovenaf in de avond",
+    "width": 1400,
+    "height": 933
+  },
+  "haram-nacht": {
+    "src": "/images/haram-nacht.jpg",
+    "alt": "De Masjid al-Haram verlicht in de nacht",
+    "width": 1400,
+    "height": 933
+  },
+  "ihram-onderweg": {
+    "src": "/images/ihram-onderweg.jpg",
+    "alt": "In ihram onderweg naar de moskee",
+    "width": 1400,
+    "height": 933
+  },
+  "kaaba-deur": {
+    "src": "/images/kaaba-deur.jpg",
+    "alt": "De gouden deur van de Kaaba",
+    "width": 1400,
+    "height": 933
+  },
+  "kart": {
+    "src": "/images/kart.jpg",
+    "alt": "Deelnemer achter het stuur op de kartbaan",
+    "width": 1400,
+    "height": 933
+  },
+  "klokkentoren": {
+    "src": "/images/klokkentoren.jpg",
+    "alt": "De klokkentoren van Makkah tegen een blauwe lucht",
+    "width": 1400,
+    "height": 933
+  },
+  "les-geleerde": {
+    "src": "/images/les-geleerde.jpg",
+    "alt": "Een geleerde geeft les in de moskee",
+    "width": 1400,
+    "height": 933
+  },
+  "les-pilaren": {
+    "src": "/images/les-pilaren.jpg",
+    "alt": "Les tussen de pilaren van de moskee",
+    "width": 1400,
+    "height": 933
+  },
+  "minaretten-nabawi": {
+    "src": "/images/minaretten-nabawi.jpg",
+    "alt": "De minaretten van de Masjid an-Nabawi",
+    "width": 1400,
+    "height": 933
+  },
+  "ornament": {
+    "src": "/images/ornament.jpg",
+    "alt": "Vergulde versiering in de moskee",
+    "width": 1400,
+    "height": 933
+  },
+  "quba-zonsondergang": {
+    "src": "/images/quba-zonsondergang.jpg",
+    "alt": "Bij de Masjid Quba bij zonsondergang",
+    "width": 1400,
+    "height": 933
+  },
+  "schietbaan": {
+    "src": "/images/schietbaan.jpg",
+    "alt": "Deelnemers tijdens een activiteit in de buitenlucht",
+    "width": 1400,
+    "height": 933
+  },
+  "trip-umrah-budget": {
+    "src": "/images/trip-umrah-budget.jpg",
+    "alt": "Groep deelnemers in ihram voor de verlichte Masjid al-Haram",
+    "width": 1600,
+    "height": 1067
+  },
+  "trip-umrah-comfort": {
+    "src": "/images/trip-umrah-comfort.jpg",
+    "alt": "Groep deelnemers in ihram in de Masjid al-Haram",
+    "width": 1600,
+    "height": 1067
+  },
+  "trip-umrah-ramadan": {
+    "src": "/images/trip-umrah-ramadan.jpg",
+    "alt": "Zitting met geleerden tijdens het avondprogramma",
+    "width": 1600,
+    "height": 1067
+  },
+  "trip-umrah-winter": {
+    "src": "/images/trip-umrah-winter.jpg",
+    "alt": "Groep deelnemers bij de Masjid Quba in Madinah",
+    "width": 1600,
+    "height": 1067
+  },
+  "uitzicht-rots": {
+    "src": "/images/uitzicht-rots.jpg",
+    "alt": "Uitzicht over Makkah vanaf de rotsen",
+    "width": 1400,
+    "height": 933
+  },
+  "water": {
+    "src": "/images/water.jpg",
+    "alt": "Zwemmen tijdens de vrije middag",
+    "width": 1400,
+    "height": 933
+  },
+  "zwembad-bal": {
+    "src": "/images/zwembad-bal.jpg",
+    "alt": "Deelnemer met een bal in het zwembad",
+    "width": 1400,
+    "height": 933
+  },
+  "zwembad-plons": {
+    "src": "/images/zwembad-plons.jpg",
+    "alt": "Deelnemers in het zwembad tijdens een vrije middag",
+    "width": 1400,
+    "height": 933
+  },
+  "zwembad-rust": {
+    "src": "/images/zwembad-rust.jpg",
+    "alt": "Even afkoelen in het zwembad",
+    "width": 1400,
+    "height": 933
+  }
+}

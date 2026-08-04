@@ -13,8 +13,8 @@ keer per thema in `src/app/globals.css`; een rebrand of een derde thema vraagt
 dus geen enkele wijziging in een component.
 
 > **Puur frontend.** Geen backend, geen database, geen API-routes. Alle content
-> staat in `src/data/content.json` en wordt bij het bouwen meegebundeld, dus
-> elke pagina is statisch. De site kan als statische export gehost worden.
+> staat als JSON in `src/data` en wordt bij het bouwen meegebundeld, dus elke
+> pagina is statisch. De site kan als statische export gehost worden.
 
 ## Stack
 
@@ -68,9 +68,15 @@ src/
 │   └── ui/                     Button, Badge, Section, ThemeToggle,
 │                               WhatsAppButton, WhatsAppCta, iconen
 ├── data/
-│   └── content.json            Alle content: reizen, teksten, contactgegevens
+│   ├── site.json               Naam, tagline, contactgegevens, socials
+│   ├── navigation.json         Links in navigatiebalk en footer
+│   ├── inclusions.json         De "Inclusief?"-regels, per id
+│   ├── images.json             Elke foto één keer beschreven, per id
+│   ├── gallery.json            Gedeelde fotopool (lijst foto-id's)
+│   ├── faq.json                Veelgestelde vragen
+│   └── trips/                  Eén bestand per reis + index.ts (het register)
 ├── lib/
-│   ├── content.ts              Leest content.json in en levert de lees-functies
+│   ├── content.ts              Leest src/data in en levert de lees-functies
 │   ├── theme.ts                Themasleutel + init-script (geen "use client")
 │   ├── types.ts                Domeinmodellen
 │   └── utils.ts                Datum-/prijsformattering, WhatsApp-links
@@ -81,26 +87,42 @@ src/
 
 ## Foto's
 
-Alle foto's staan in `public/images` en worden aangestuurd vanuit
-`content.json`. Een foto toevoegen of vervangen:
+Alle foto's staan in `public/images` en worden beschreven in
+`src/data/images.json`. Een foto toevoegen of vervangen:
 
 1. Zet het bestand in `public/images`. Schaal het eerst terug — de lange zijde
    op ~1600px en JPEG-kwaliteit 80 levert scherpe beelden van 100–300 KB.
-2. Voeg hem toe aan `gallery` (of zet het pad in de `coverImage` van een reis)
-   met de **echte** afmetingen: die bepalen de verhouding waarmee Next.js de
-   ruimte reserveert, dus een verkeerde waarde laat de pagina verspringen.
-3. Schrijf een `alt` die beschrijft wat er te zien is.
+2. Voeg hem toe aan `images.json` met de **echte** afmetingen: die bepalen de
+   verhouding waarmee Next.js de ruimte reserveert, dus een verkeerde waarde
+   laat de pagina verspringen. Schrijf ook een `alt` die beschrijft wat er te
+   zien is. Als id gebruiken we de bestandsnaam zonder extensie.
+3. Zet die id in `gallery.json`, in de `gallery` van een reis, of als
+   `coverImage` van een reis.
 
-De galerij bestaat uit twee lagen. De `gallery` bovenin `content.json` is de
-gedeelde set en staat op de homepage. Krijgt een reis een eigen `gallery`, dan
-gebruikt die reis zijn eigen foto's — zo toont elke reispagina iets anders. Laat
-je hem weg, dan valt die reis terug op de gedeelde set.
+```json
+"klokkentoren": {
+  "src": "/images/klokkentoren.jpg",
+  "alt": "De klokkentoren van Makkah tegen een blauwe lucht",
+  "width": 1400,
+  "height": 933
+}
+```
+
+Elke foto staat zo maar één keer beschreven, ook als hij bij meerdere reizen
+hoort: een gecorrigeerde alt-tekst of afmeting geldt meteen overal. Verwijs je
+naar een id die niet bestaat, dan faalt de build met een duidelijke melding.
+
+De galerij bestaat uit twee lagen. `gallery.json` is de gedeelde set en staat op
+de homepage. Krijgt een reis een eigen `gallery`, dan gebruikt die reis zijn
+eigen foto's — zo toont elke reispagina iets anders. Laat je hem weg, dan valt
+die reis terug op de gedeelde set.
 
 Drie dingen om rekening mee te houden:
 
 - **Houd elke `gallery` op zes foto's.** Met de grote tegel erbij vullen die
   precies drie rijen van drie op desktop en drie rijen van twee op mobiel. Bij
-  een ander aantal blijft er onderaan een lege cel over.
+  een ander aantal blijft er onderaan een lege cel over — de build weigert het
+  dan ook.
 - **Gebruik liggende foto's.** De tegels zijn breder dan hoog en snijden bij met
   `object-cover`; van een staande foto blijft dan alleen een smalle band over.
   Snijd ze daarom vooraf op 3:2 bij, zodat jij bepaalt wat er in beeld komt en
@@ -147,28 +169,43 @@ verschillende afmetingen aan elkaar te plakken.
 
 ## Content aanpassen
 
-Alles staat in **`src/data/content.json`**. Geen component hoeft aangeraakt te
-worden om teksten, prijzen of reizen te wijzigen.
+Alles staat in **`src/data`**, per onderwerp een eigen bestand. Geen component
+hoeft aangeraakt te worden om teksten, prijzen of reizen te wijzigen.
 
-| Sleutel           | Bevat                                                        |
-| ----------------- | ------------------------------------------------------------ |
-| `site`            | Naam, tagline, WhatsApp-nummer, e-mail, Instagram, domein     |
-| `navigation`      | De links in de navigatiebalk en de footer                     |
-| `inclusions`      | De "Inclusief?"-regels, één keer gedefinieerd                 |
-| `gallery`         | Gedeelde fotopool                                             |
-| `trips`           | De reizen                                                     |
-| `faq`             | Veelgestelde vragen op de contactpagina                       |
+| Bestand              | Bevat                                                      |
+| -------------------- | ---------------------------------------------------------- |
+| `site.json`          | Naam, tagline, WhatsApp-nummer, e-mail, Instagram, domein   |
+| `navigation.json`    | De links in de navigatiebalk en de footer                   |
+| `inclusions.json`    | De "Inclusief?"-regels, één keer gedefinieerd, per id       |
+| `images.json`        | Elke foto één keer beschreven, per id                       |
+| `gallery.json`       | Gedeelde fotopool — een lijst van foto-id's                 |
+| `faq.json`           | Veelgestelde vragen op de contactpagina                     |
+| `trips/<slug>.json`  | Eén bestand per reis                                        |
+| `trips/index.ts`     | Het register: welke reisbestanden er zijn                   |
 
-Een paar regels die het bestand hanteert:
+### Een reis toevoegen
 
-- Een reis verwijst met id's naar `inclusions`, zodat dezelfde tekst niet bij
-  elke reis herhaald staat. Verwijs je naar een id die niet bestaat, dan faalt
-  de build met een duidelijke melding — geen stille lege lijst.
-- `status: "draft"` verbergt een reis zonder hem te verwijderen.
-- `featured: true` bepaalt welke reis de homepage-hero toont; zet dit bij één
-  reis.
-- Een reis zonder eigen `gallery` gebruikt de gedeelde `gallery`.
-- Datums zijn ISO (`"2026-11-07"`), `slug` is uniek en vormt de URL.
+1. Maak `src/data/trips/<slug>.json` aan — kopieer een bestaande reis als basis.
+2. Zet in `src/data/trips/index.ts` één import erbij en de naam in de lijst.
+   Die lijst staat er met de hand omdat `content.ts` ook in de browser-bundle
+   belandt (de navbar gebruikt hem), en daar kan geen map uitgelezen worden.
+3. Draai `npm run build`. Klopt er een verwijzing niet, dan hoor je het meteen.
+
+### Regels die de bestanden hanteren
+
+- Een reis verwijst met id's naar `inclusions.json` en `images.json`, zodat
+  dezelfde tekst of foto niet bij elke reis herhaald staat. Verwijs je naar een
+  id die niet bestaat, dan faalt de build met een duidelijke melding — geen
+  stille lege lijst.
+- `status: "draft"` verbergt een reis zonder hem te verwijderen. Drafts worden
+  eruit gefilterd vóór de verwijzingen opgezocht worden, dus een half afgewerkte
+  reis breekt de build niet.
+- `featured: true` bepaalt welke reis de homepage-hero toont; meer dan één laat
+  de build falen.
+- Een reis zonder eigen `gallery` gebruikt de gedeelde pool uit `gallery.json`.
+  Elke galerij telt precies zes foto's.
+- Datums zijn ISO (`"2026-11-07"`), `slug` is uniek en vormt de URL. De
+  bestandsnaam volgt de slug, maar de `slug`-waarde in het bestand telt.
 
 `src/lib/content.ts` is de enige plek die het bestand inleest; `src/lib/types.ts`
 beschrijft de vorm ervan.
@@ -186,4 +223,4 @@ knop op zich. Beide bouwen een `wa.me`-link met een voorgevuld bericht, zodat de
 klant alleen nog hoeft te verzenden — pas de tekst aan waar de component wordt
 aangeroepen.
 
-Het nummer staat één keer in `content.json` onder `site.whatsapp`.
+Het nummer staat één keer in `src/data/site.json` onder `whatsapp`.
