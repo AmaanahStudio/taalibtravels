@@ -12,13 +12,13 @@ export type Theme = "dark" | "light";
 /** Sleutel waaronder de themakeuze in localStorage bewaard wordt. */
 export const THEME_STORAGE_KEY = "taalibtravels-theme";
 
-/** Donker is het uitgangspunt; licht is de bewuste keuze van de bezoeker. */
-export const DEFAULT_THEME: Theme = "dark";
+/** Licht is het uitgangspunt; donker is de bewuste keuze van de bezoeker. */
+export const DEFAULT_THEME: Theme = "light";
 
 /**
  * Wordt synchroon uitgevoerd terwijl de browser de HTML parseert, dus vóór de
- * eerste paint. Zonder dit ziet iemand die licht koos eerst een donkere flits.
+ * eerste paint. Zonder dit ziet iemand die donker koos eerst een lichte flits.
  */
 export const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY,
-)});document.documentElement.dataset.theme=t==="light"?"light":"dark"}catch(e){document.documentElement.dataset.theme="dark"}})()`;
+)});document.documentElement.dataset.theme=t==="dark"?"dark":"light"}catch(e){document.documentElement.dataset.theme="light"}})()`;

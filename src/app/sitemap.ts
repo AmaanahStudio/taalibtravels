@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const tripRoutes: MetadataRoute.Sitemap = getTrips().map((trip) => ({
     url: `${SITE.url}/reizen/${trip.slug}`,
-    lastModified: new Date(trip.updatedAt),
+    lastModified: trip.updatedAt ? new Date(trip.updatedAt) : undefined,
     changeFrequency: "weekly",
     priority: 0.8,
   }));

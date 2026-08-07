@@ -5,24 +5,15 @@ import { DateBlock } from "@/components/trips/date-block";
 import { FeatureList } from "@/components/trips/feature-list";
 import { GallerySection } from "@/components/trips/gallery-section";
 import { PriceBlock } from "@/components/trips/price-block";
-import { Badge } from "@/components/ui/badge";
 import { ArrowRightIcon } from "@/components/ui/icons";
 import { Container, Section, SectionHeading } from "@/components/ui/section";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { WhatsAppCta } from "@/components/ui/whatsapp-cta";
 import type { Trip } from "@/lib/types";
-import { formatDateLong, nightsBetween } from "@/lib/utils";
-
-const AUDIENCE_LABEL: Record<Trip["audience"], string> = {
-  brothers: "Enkel broeders",
-  sisters: "Enkel zusters",
-  mixed: "Broeders & zusters",
-  families: "Families",
-};
+import { formatDateLong } from "@/lib/utils";
 
 /** Volledige detailweergave van één reis: alle info van de poster plus het aanmeldformulier. */
 export function TripDetail({ trip }: { trip: Trip }) {
-  const nights = nightsBetween(trip.departureDate, trip.returnDate);
   const message = `Assalaamu alaykum, ik heb een vraag over "${trip.title}" (${formatDateLong(trip.departureDate)}).`;
   const reservationMessage = `Assalaamu alaykum, ik wil graag een plek reserveren voor "${trip.title}" (${trip.subtitle}).`;
 
@@ -41,14 +32,6 @@ export function TripDetail({ trip }: { trip: Trip }) {
 
           <div className="mt-8 grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div className="flex flex-col gap-6">
-              <div className="flex flex-wrap gap-2">
-                <Badge tone="accent">{trip.subtitle}</Badge>
-                <Badge tone="muted">{AUDIENCE_LABEL[trip.audience]}</Badge>
-                {trip.spotsLeft <= 5 && (
-                  <Badge tone="alert">Nog {trip.spotsLeft} plekken</Badge>
-                )}
-              </div>
-
               <h1 className="display-title text-5xl text-heading sm:text-6xl lg:text-7xl">
                 {trip.title}
               </h1>
@@ -90,11 +73,7 @@ export function TripDetail({ trip }: { trip: Trip }) {
 
       {/* Datum */}
       <Section id="datum">
-        <SectionHeading
-          eyebrow="Datum?"
-          title="Vertrek & terugkomst"
-          intro={`${nights} dagen, van ${formatDateLong(trip.departureDate)} tot ${formatDateLong(trip.returnDate)}.`}
-        />
+        <SectionHeading eyebrow="Datum" title="Vertrek & terugkomst" />
         <DateBlock
           departureDate={trip.departureDate}
           returnDate={trip.returnDate}
@@ -105,7 +84,7 @@ export function TripDetail({ trip }: { trip: Trip }) {
       {/* Inclusief */}
       <Section id="inclusief" spacing="continue">
         <SectionHeading
-          eyebrow="Inclusief?"
+          eyebrow="Inclusief"
           title="Wat zit erbij"
           intro="Dit zit allemaal in de prijs."
         />
@@ -129,7 +108,7 @@ export function TripDetail({ trip }: { trip: Trip }) {
 
       {/* Prijs */}
       <Section id="prijs" spacing="continue">
-        <SectionHeading eyebrow="Prijs?" title="Wat kost het" />
+        <SectionHeading eyebrow="Prijs" title="Wat kost het" />
         <PriceBlock trip={trip} className="mt-10" />
       </Section>
 

@@ -4,39 +4,42 @@
  * TaalibTravels design tokens.
  *
  * De site heeft twee uiterlijken:
- *   - dark  (standaard) — bijna zwart met een blauwe ondertoon en ijsblauw accent
- *   - light             — crème/wit met een warm goud accent
+ *   - light (standaard) — crème/wit met een warm goud accent
+ *   - dark              — bijna zwart met een blauwe ondertoon en ijsblauw accent
  *
  * Componenten gebruiken uitsluitend de semantische tokens hieronder
  * (bg-page, bg-surface, text-heading, text-accent, …). De concrete kleuren
  * staan één keer in dit bestand, per thema. Zo hoeft er voor een rebrand of een
  * derde thema geen enkel component aangepast te worden.
+ *
+ * De standaard staat hier in @theme; het andere thema overschrijft verderop.
+ * Zo klopt het beeld ook wanneer het `data-theme`-attribuut ontbreekt.
  */
 @theme {
   /* --- Vlakken --- */
-  --color-page: #090c11; /* paginakleur */
-  --color-raised: #0e131a; /* footer, zwevende kaarten */
-  --color-sunken: #141a24; /* achtergrond onder media */
-  --color-surface: #111720; /* cards en velden */
-  --color-surface-strong: #18202b; /* hover-toestand van een card */
+  --color-page: #faf7f0; /* paginakleur */
+  --color-raised: #ffffff; /* footer, zwevende kaarten */
+  --color-sunken: #ece4d4; /* achtergrond onder media */
+  --color-surface: #ffffff; /* cards en velden */
+  --color-surface-strong: #f6f0e4; /* hover-toestand van een card */
 
   /* --- Lijnen --- */
-  --color-line: #1f2836;
-  --color-line-strong: #33404f;
+  --color-line: #e6dcc9;
+  --color-line-strong: #cbbb9c;
 
   /* --- Tekst --- */
-  --color-heading: #eaf1f7;
-  --color-body: #b9c6d4;
-  --color-muted: #8698a8;
+  --color-heading: #191410;
+  --color-body: #4a4237;
+  --color-muted: #756a59;
 
-  /* --- Accent (ijsblauw in dark, goud in light) --- */
-  --color-accent: #93c9ea;
-  --color-accent-strong: #5fabd8;
-  --color-accent-soft: #17293a; /* accent-getint vlak, bv. badges */
+  /* --- Accent (goud in light, ijsblauw in dark) --- */
+  --color-accent: #8a6114;
+  --color-accent-strong: #b8862b;
+  --color-accent-soft: #f6ecd8; /* accent-getint vlak, bv. badges */
 
   /* --- Primaire knop (keert om per thema) --- */
-  --color-btn: #eaf1f7;
-  --color-on-btn: #090c11;
+  --color-btn: #191410;
+  --color-on-btn: #faf7f0;
 
   /* --- WhatsApp-groen: merkkleur, verandert niet mee --- */
   --color-whatsapp-400: #4ade80;
@@ -46,10 +49,10 @@
 
   --radius-4xl: 2rem;
 
-  --shadow-card: 0 30px 80px -45px rgb(0 0 0 / 0.9);
-  --shadow-media: 0 40px 120px -40px rgb(0 0 0 / 1);
-  --shadow-btn: 0 10px 40px -12px rgb(234 241 247 / 0.35);
-  --shadow-whatsapp: 0 10px 40px -12px rgb(37 211 102 / 0.7);
+  --shadow-card: 0 24px 60px -40px rgb(74 56 20 / 0.35);
+  --shadow-media: 0 34px 90px -40px rgb(74 56 20 / 0.4);
+  --shadow-btn: 0 10px 40px -14px rgb(25 20 16 / 0.45);
+  --shadow-whatsapp: 0 10px 40px -14px rgb(29 168 81 / 0.55);
 
   --animate-fade-up: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-fade-in: fade-in 0.9s ease-out both;
@@ -94,46 +97,46 @@
 }
 
 /*
- * Light thema. Bewust buiten elke @layer gehouden: ongelaagde regels winnen
+ * Dark thema. Bewust buiten elke @layer gehouden: ongelaagde regels winnen
  * altijd van de gelaagde :root uit @theme, ongeacht specificiteit.
  * Het attribuut wordt gezet door het script in de root layout.
  */
-:root[data-theme="light"] {
-  --color-page: #faf7f0;
-  --color-raised: #ffffff;
-  --color-sunken: #ece4d4;
-  --color-surface: #ffffff;
-  --color-surface-strong: #f6f0e4;
+:root[data-theme="dark"] {
+  --color-page: #090c11;
+  --color-raised: #0e131a;
+  --color-sunken: #141a24;
+  --color-surface: #111720;
+  --color-surface-strong: #18202b;
 
-  --color-line: #e6dcc9;
-  --color-line-strong: #cbbb9c;
+  --color-line: #1f2836;
+  --color-line-strong: #33404f;
 
-  --color-heading: #191410;
-  --color-body: #4a4237;
-  --color-muted: #756a59;
+  --color-heading: #eaf1f7;
+  --color-body: #b9c6d4;
+  --color-muted: #8698a8;
 
-  --color-accent: #8a6114;
-  --color-accent-strong: #b8862b;
-  --color-accent-soft: #f6ecd8;
+  --color-accent: #93c9ea;
+  --color-accent-strong: #5fabd8;
+  --color-accent-soft: #17293a;
 
-  --color-btn: #191410;
-  --color-on-btn: #faf7f0;
+  --color-btn: #eaf1f7;
+  --color-on-btn: #090c11;
 
-  --shadow-card: 0 24px 60px -40px rgb(74 56 20 / 0.35);
-  --shadow-media: 0 34px 90px -40px rgb(74 56 20 / 0.4);
-  --shadow-btn: 0 10px 40px -14px rgb(25 20 16 / 0.45);
-  --shadow-whatsapp: 0 10px 40px -14px rgb(29 168 81 / 0.55);
+  --shadow-card: 0 30px 80px -45px rgb(0 0 0 / 0.9);
+  --shadow-media: 0 40px 120px -40px rgb(0 0 0 / 1);
+  --shadow-btn: 0 10px 40px -12px rgb(234 241 247 / 0.35);
+  --shadow-whatsapp: 0 10px 40px -12px rgb(37 211 102 / 0.7);
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
-    color-scheme: dark;
+    color-scheme: light;
   }
 
-  :root[data-theme="light"] {
-    color-scheme: light;
+  :root[data-theme="dark"] {
+    color-scheme: dark;
   }
 
   body {
@@ -165,12 +168,12 @@
     text-transform: uppercase;
     letter-spacing: -0.02em;
     line-height: 0.88;
-    text-shadow: 0 0 60px --alpha(var(--color-accent) / 25%);
   }
 
-  /* In het lichte thema oogt een gloed rommelig. */
-  :root[data-theme="light"] .display-title {
-    text-shadow: none;
+  /* Alleen op de donkere achtergrond voegt een zachte gloed iets toe; in het
+     lichte thema oogt hij rommelig. */
+  :root[data-theme="dark"] .display-title {
+    text-shadow: 0 0 60px --alpha(var(--color-accent) / 25%);
   }
 
   /*

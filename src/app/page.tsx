@@ -7,13 +7,7 @@ import { TripCard } from "@/components/trips/trip-card";
 import { Button } from "@/components/ui/button";
 import { ArrowRightIcon } from "@/components/ui/icons";
 import { Section, SectionHeading } from "@/components/ui/section";
-import {
-  SITE,
-  getFeaturedTrip,
-  getGallery,
-  getStartingPrice,
-  getTrips,
-} from "@/lib/content";
+import { SITE, getGallery, getNextTrip, getTrips } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: `${SITE.name} — ${SITE.tagline}`,
@@ -22,24 +16,19 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  const trip = getFeaturedTrip();
+  const trip = getNextTrip();
   const trips = getTrips();
   const gallery = getGallery();
-  const startingPrice = getStartingPrice();
 
   return (
     <>
-      <Hero
-        trip={trip}
-        tripCount={trips.length}
-        startingPrice={startingPrice}
-      />
+      <Hero trip={trip} />
 
       {/* Wat er bij elke reis inbegrepen zit — bewust algemeen, want dit is de
           homepage en geen detailpagina van één reis. */}
       <Section id="inclusief">
         <SectionHeading
-          eyebrow="Inclusief?"
+          eyebrow="Inclusief"
           title="Wat zit erbij"
           intro="Bij elke reis zit hetzelfde pakket, zonder verrassingen achteraf."
         />

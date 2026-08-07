@@ -64,7 +64,6 @@ export default function ContactPage() {
           description="Vragen over een reis, de prijs of het visum? App ons gerust, ook als je nog niets wil vastleggen."
           label="WhatsApp"
           message={WHATSAPP_MESSAGE}
-          footnote="Meestal binnen enkele uren antwoord."
         />
 
         <ul className="mt-5 grid gap-4 sm:grid-cols-3">

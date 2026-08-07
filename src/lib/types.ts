@@ -80,13 +80,16 @@ export interface Trip {
   /** Eigen foto's, of de gedeelde fotopool als de reis er geen heeft. Altijd zes. */
   gallery: ImageAsset[];
   audience: TripAudience;
-  spotsTotal: number;
-  spotsLeft: number;
+  /**
+   * Optioneel: laat je ze weg, dan toont de reiskaart geen "Nog X plekken".
+   * TypeScript merkt een ontbrekend veld hier niet op — de JSON wordt met
+   * `as unknown as` gecast — dus de consumenten gaan uit van `undefined`.
+   */
+  spotsTotal?: number;
+  spotsLeft?: number;
   status: TripStatus;
-  /** Uitgelicht op de homepage. Slechts één reis hoort dit op `true` te hebben. */
-  featured: boolean;
-  /** Laatste inhoudelijke wijziging; wordt gebruikt in de sitemap. */
-  updatedAt: string;
+  /** Laatste inhoudelijke wijziging; vult `lastModified` in de sitemap. */
+  updatedAt?: string;
 }
 
 export interface NavLink {

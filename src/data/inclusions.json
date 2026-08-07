@@ -1,47 +1,26 @@
 {
   "flight": {
     "label": "Heen- en terugvlucht",
-    "description": "Vanuit Brussel of Amsterdam, inclusief ruimbagage.",
     "icon": "plane"
   },
   "stay": {
     "label": "Verblijf (Makkah & Madinah)",
-    "description": "Hotels op korte loopafstand van beide moskeeën.",
     "icon": "hotel"
   },
   "visa": {
     "label": "Visum (1 jaar geldig)",
-    "description": "Wij regelen de volledige visumaanvraag voor je.",
     "icon": "passport"
   },
   "guidance": {
     "label": "Begeleiding",
-    "description": "Nederlandstalige begeleiding van vertrek tot terugkomst.",
     "icon": "guide"
   },
   "activities": {
     "label": "Activiteiten",
-    "description": "Ziyarah, excursies en groepsactiviteiten ter plaatse.",
     "icon": "activities"
   },
   "education": {
     "label": "Opleidingen",
-    "description": "Dagelijkse lessen over de rituelen en het gedrag van de Umrah.",
     "icon": "education"
-  },
-  "halfPension": {
-    "label": "Halfpension",
-    "description": "Dagelijks ontbijt en avondmaal in het hotel.",
-    "icon": "meals"
-  },
-  "iftarSuhoor": {
-    "label": "Iftar & suhoor",
-    "description": "Dagelijks verzorgd in het hotel of nabij de Haram.",
-    "icon": "meals"
-  },
-  "transfers": {
-    "label": "Transfers",
-    "description": "Privétransfers tussen luchthaven, hotel en ziyarah.",
-    "icon": "transport"
   }
 }

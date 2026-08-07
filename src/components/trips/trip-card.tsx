@@ -18,7 +18,7 @@ export function TripCard({
   /** Zet `priority` op de eerste card zodat de cover niet lazy laadt. */
   priority?: boolean;
 }) {
-  const almostFull = trip.spotsLeft <= 5;
+  const almostFull = trip.spotsLeft !== undefined && trip.spotsLeft <= 5;
 
   return (
     <article

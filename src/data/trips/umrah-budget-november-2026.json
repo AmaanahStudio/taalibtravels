@@ -1,11 +1,11 @@
 {
   "slug": "umrah-budget-november-2026",
   "title": "Umrah Budget",
-  "subtitle": "November 2026 · 10 dagen",
-  "summary": "Onze scherpst geprijsde Umrah: alles inbegrepen, van vlucht en visum tot dagelijkse begeleiding. Ideaal voor wie voor het eerst gaat.",
+  "subtitle": "November 2026",
+  "summary": "Onze scherpst geprijsde Umrah: alles inbegrepen, van vlucht en visum tot dagelijkse begeleiding.",
   "description": [
-    "Tien dagen Umrah zonder zorgen. Je vliegt heen en terug, verblijft in Makkah én Madinah en wordt van begin tot eind Nederlandstalig begeleid. Wij regelen het visum, de transfers en het volledige programma ter plaatse.",
-    "Naast de rituelen staat er elke dag een korte opleiding op het programma: hoe je de Umrah correct verricht, wat de betekenis is van elke stap, en hoe je het geleerde meeneemt naar huis. Daarnaast is er ruimte voor ziyarah, sport en ontspanning met de groep.",
+    "Tien dagen Umrah zonder zorgen. Je vliegt heen en terug, verblijft in Makkah én Madinah en wordt van begin tot eind Nederlandstalig begeleid. Wij regelen het visum, de vluchten en het volledige programma.",
+    "Naast de umrah staan er activiteiten op het programma zoals ziyarah, sport en ontspanning met de groep.",
     "Deze reis is uitsluitend voor broeders en het aantal plekken is beperkt. Betalen in termijnen is mogelijk — laat het ons weten bij je aanmelding."
   ],
   "departureDate": "2026-11-07",
@@ -27,9 +27,5 @@
     "quba-zonsondergang"
   ],
   "audience": "brothers",
-  "spotsTotal": 30,
-  "spotsLeft": 8,
-  "status": "published",
-  "featured": true,
-  "updatedAt": "2026-07-14"
+  "status": "published"
 }

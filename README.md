@@ -4,8 +4,8 @@ Website voor Umrah-reisbureau **TaalibTravels**, gebaseerd op de campagneposter.
 
 De site heeft twee uiterlijken, om te wisselen met de knop in de navigatie:
 
-- **dark** (standaard) — bijna zwart met blauwe ondertoon en ijsblauw accent
-- **light** — crème/wit met een warm goud accent
+- **light** (standaard) — crème/wit met een warm goud accent
+- **dark** — bijna zwart met blauwe ondertoon en ijsblauw accent
 
 Componenten gebruiken uitsluitend semantische kleur-tokens (`bg-page`,
 `bg-surface`, `text-heading`, `text-accent`, …). De concrete waarden staan één
@@ -200,8 +200,9 @@ hoeft aangeraakt te worden om teksten, prijzen of reizen te wijzigen.
 - `status: "draft"` verbergt een reis zonder hem te verwijderen. Drafts worden
   eruit gefilterd vóór de verwijzingen opgezocht worden, dus een half afgewerkte
   reis breekt de build niet.
-- `featured: true` bepaalt welke reis de homepage-hero toont; meer dan één laat
-  de build falen.
+- De homepage-hero toont altijd de eerstvolgende reis: de eerste die op de dag
+  van de build nog niet terug is. Daar valt niets aan in te stellen — zet de
+  datums goed en de hero volgt vanzelf.
 - Een reis zonder eigen `gallery` gebruikt de gedeelde pool uit `gallery.json`.
   Elke galerij telt precies zes foto's.
 - Datums zijn ISO (`"2026-11-07"`), `slug` is uniek en vormt de URL. De

@@ -57,27 +57,31 @@ kennen:
 
 - Een verwijzing naar een niet-bestaande `inclusion`- of foto-id **gooit tijdens de build**
   (`resolveInclusions`, `resolveImage`), bewust geen stille lege lijst. Datzelfde geldt voor
-  een galerij die geen zes foto's telt, twee reizen met dezelfde slug, en meer dan één reis
-  op `featured` (`resolveGallery`, `assertTripsConsistent`).
+  een galerij die geen zes foto's telt en twee reizen met dezelfde slug
+  (`resolveGallery`, `assertTripsConsistent`).
 - `inclusions.json` en de reisbestanden worden gecast met `as unknown as`; TypeScript leest
   uit JSON alleen brede types (`"EUR"` wordt `string`). De typecheck bewaakt die vorm dus
   niet — de resolvers hierboven doen dat wel, bij de build.
-- `status: "draft"` verbergt een reis, `featured: true` kiest de homepage-hero, een reis
-  zonder eigen `gallery` valt terug op de gedeelde pool. Drafts worden er vóór het
-  uitpakken uitgefilterd, dus een half afgewerkte reis breekt de build niet.
+- `status: "draft"` verbergt een reis, een reis zonder eigen `gallery` valt terug op de
+  gedeelde pool. Drafts worden er vóór het uitpakken uitgefilterd, dus een half afgewerkte
+  reis breekt de build niet.
+- De homepage-hero is niet instelbaar: `getNextTrip` pakt de eerste reis die op dat moment
+  nog niet terug is, en vult daarmee titel, samenvatting, datum en prijs. De pagina wordt
+  statisch gebouwd, dus "dat moment" is de build — na een verstreken reis is een redeploy
+  nodig voordat de hero opschuift.
 - Een reis toevoegen: bestand aanmaken onder `trips/`, plus één import en één regel in
   `trips/index.ts`. Dat register staat er expliciet omdat `content.ts` ook in een client
   component belandt (de navbar) — de map uitlezen met `fs` kan dus niet.
 
 Consumeer content via de functies uit `content.ts` (`getTrips`, `getTripBySlug`,
-`getFeaturedTrip`, `getTripSlugs`, `getStartingPrice`, `getGallery`) en de constanten
+`getNextTrip`, `getTripSlugs`, `getGallery`) en de constanten
 `SITE` / `NAV_LINKS` / `FAQ` — importeer nooit een bestand uit `src/data` rechtstreeks in
 een component.
 
 ### Thema's en design tokens
 
-Twee uiterlijken, geschakeld via `data-theme` op `<html>`: `dark` (standaard) en
-`light`. Componenten gebruiken **uitsluitend semantische tokens** — `bg-page`,
+Twee uiterlijken, geschakeld via `data-theme` op `<html>`: `light` (standaard) en
+`dark`. Componenten gebruiken **uitsluitend semantische tokens** — `bg-page`,
 `bg-surface`, `text-heading`, `text-accent`, `border-line`, `shadow-card`, … De concrete
 waarden staan één keer per thema in [globals.css](src/app/globals.css). Een hardgecodeerde
 kleur in een component (`bg-[#111]`, `text-white`) breekt het andere thema en hoort er
@@ -85,8 +89,9 @@ niet te staan. WhatsApp-groen is de uitzondering: merkkleur, verandert niet mee.
 
 Twee details die niet vanzelf spreken:
 
-- De `:root[data-theme="light"]`-blok in `globals.css` staat bewust **buiten elke
-  `@layer`** — ongelaagde regels winnen altijd van de gelaagde `:root` uit `@theme`.
+- `@theme` bevat de waarden van het standaardthema (light); het `:root[data-theme="dark"]`-blok
+  overschrijft ze en staat bewust **buiten elke `@layer`** — ongelaagde regels winnen altijd
+  van de gelaagde `:root` uit `@theme`.
 - [src/lib/theme.ts](src/lib/theme.ts) heeft bewust **geen `"use client"`**. Het wordt
   door zowel de root layout (server) als de ThemeToggle (client) geïmporteerd; met de
   directive zou `THEME_INIT_SCRIPT` aan serverzijde een client-verwijzing zijn in plaats

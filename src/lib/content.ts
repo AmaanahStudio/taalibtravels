@@ -127,9 +127,9 @@ const TRIPS: Trip[] = TRIPS_RAW.filter((trip) => trip.status !== "draft")
   .sort((a, b) => a.departureDate.localeCompare(b.departureDate));
 
 /**
- * Controles die pas kloppen wanneer je alle reizen naast elkaar legt. Nu elke
- * reis een eigen bestand heeft, ziet niemand meer in één oogopslag dat twee
- * reizen dezelfde slug of allebei `featured` gebruiken — daarom hier.
+ * Controle die pas klopt wanneer je alle reizen naast elkaar legt. Nu elke reis
+ * een eigen bestand heeft, ziet niemand meer in één oogopslag dat twee reizen
+ * dezelfde slug gebruiken — daarom hier.
  */
 function assertTripsConsistent(trips: Trip[]): void {
   const slugs = new Set<string>();
@@ -142,15 +142,6 @@ function assertTripsConsistent(trips: Trip[]): void {
     }
 
     slugs.add(trip.slug);
-  }
-
-  const featured = trips.filter((trip) => trip.featured);
-
-  if (featured.length > 1) {
-    throw new Error(
-      `Meerdere reizen staan op featured (${featured.map((trip) => trip.slug).join(", ")}). ` +
-        "De homepage licht er maar één uit.",
-    );
   }
 }
 
@@ -166,21 +157,27 @@ export function getTripBySlug(slug: string): Trip | null {
 }
 
 /**
- * De reis die op de homepage wordt uitgelicht. Valt terug op de eerstvolgende
- * reis wanneer er geen enkele als `featured` is gemarkeerd.
+ * De reis die de homepage uitlicht: de eerstvolgende die nog niet voorbij is.
+ * `TRIPS` staat op vertrekdatum gesorteerd, dus de eerste reis die vandaag nog
+ * niet terug is, is de juiste. Zijn ze allemaal geweest, dan blijft de laatste
+ * staan — een lege hero is erger dan een verlopen datum.
+ *
+ * De datum wordt hier berekend en niet op moduleniveau: dit bestand belandt via
+ * de navbar ook in de browserbundel, en een tijdstip dat server en client
+ * verschillend invullen geeft een hydration-mismatch. Deze functie wordt alleen
+ * vanuit een server component aangeroepen.
  */
-export function getFeaturedTrip(): Trip {
-  return TRIPS.find((trip) => trip.featured) ?? TRIPS[0];
+export function getNextTrip(): Trip {
+  const today = new Date().toISOString().slice(0, 10);
+
+  return (
+    TRIPS.find((trip) => trip.returnDate >= today) ?? TRIPS[TRIPS.length - 1]
+  );
 }
 
 /** Slugs voor `generateStaticParams`, zodat elke detailpagina statisch wordt. */
 export function getTripSlugs(): string[] {
   return TRIPS.map((trip) => trip.slug);
-}
-
-/** Laagste prijs over alle reizen heen — de "vanaf"-prijs op de homepage. */
-export function getStartingPrice(): number {
-  return Math.min(...TRIPS.map((trip) => trip.price.amount));
 }
 
 /** Gedeelde fotopool, voor de galerij op de homepage. */

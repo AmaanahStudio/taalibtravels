@@ -1,7 +1,5 @@
 import budgetNovember2026 from "./umrah-budget-november-2026.json";
-import comfortDecember2026 from "./umrah-comfort-december-2026.json";
-import ramadan2027 from "./umrah-ramadan-2027.json";
-import winterFebruari2027 from "./umrah-winter-februari-2027.json";
+import umrahSeptember2026 from "./umrah-september-2026.json";
 
 /**
  * Register van alle reisbestanden — één reis per JSON-bestand hiernaast.
@@ -14,7 +12,5 @@ import winterFebruari2027 from "./umrah-winter-februari-2027.json";
  */
 export const TRIP_FILES = [
   budgetNovember2026,
-  comfortDecember2026,
-  winterFebruari2027,
-  ramadan2027,
+  umrahSeptember2026,
 ];

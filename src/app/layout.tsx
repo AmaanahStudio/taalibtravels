@@ -72,11 +72,9 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+/** Browserbalk op de paginakleur van het standaardthema (light). */
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#090c11" },
-    { media: "(prefers-color-scheme: light)", color: "#090c11" },
-  ],
+  themeColor: "#faf7f0",
 };
 
 export default function RootLayout({

@@ -5,35 +5,33 @@ import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { Container } from "@/components/ui/section";
 import { SITE } from "@/lib/content";
 import type { Trip } from "@/lib/types";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, splitDate } from "@/lib/utils";
 
 /**
- * Hero van de homepage, gebaseerd op de poster: tagline, een enorme
- * "UMRAH BUDGET"-titel, korte intro en een duidelijke WhatsApp-CTA.
+ * Hero van de homepage, gebaseerd op de poster: een enorme titel, korte intro
+ * en een duidelijke WhatsApp-CTA.
  *
- * De kerncijfers zijn bewust algemeen gehouden — concrete vertrek- en
- * terugkomstdata horen op de detailpagina van een reis, niet op de homepage.
+ * Alles wat hier over de reis staat — titel, samenvatting, datum en prijs —
+ * komt uit de eerstvolgende reis, zodat de homepage vanzelf meeschuift zodra
+ * die voorbij is. Alleen de videocompilatie staat er los van.
  */
 export function Hero({
   trip,
-  tripCount,
-  startingPrice,
 }: {
-  /** Uitgelichte campagne — bepaalt de titel in de hero. */
+  /** De eerstvolgende reis; vult de hele hero. */
   trip: Trip;
-  /** Aantal geplande reizen, voor de kerncijfers. */
-  tripCount: number;
-  /** Laagste prijs over alle reizen heen. */
-  startingPrice: number;
 }) {
   const message = `Assalaamu alaykum, ik wil graag meer info over de Umrah-reizen van ${SITE.name}.`;
+
+  const departure = splitDate(trip.departureDate);
+  const arrival = splitDate(trip.returnDate);
 
   const stats = [
     { label: "Bestemming", value: "Makkah & Madinah" },
     { label: "Begeleiding", value: "Nederlandstalig" },
     {
-      label: "Vertrekdata",
-      value: `${tripCount} ${tripCount === 1 ? "reis" : "reizen"} gepland`,
+      label: "Datum",
+      value: `${departure.day} ${departure.month} — ${arrival.day} ${arrival.month} ${arrival.year}`,
     },
   ];
 
@@ -53,9 +51,7 @@ export function Hero({
             </div>
 
             <p className="max-w-xl text-base leading-relaxed text-body sm:text-lg">
-              Vlucht, hotel in Makkah en Madinah, visum en Nederlandstalige
-              begeleiding — alles zit erbij. Jij hoeft alleen te kiezen wanneer
-              je gaat.
+              {trip.summary}
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -95,14 +91,14 @@ export function Hero({
             {/* Zwevende prijskaart over de video heen */}
             <div className="absolute -bottom-6 -left-2 animate-float rounded-3xl border border-line bg-raised/85 px-6 py-5 backdrop-blur-xl sm:-left-6 sm:px-8 sm:py-6">
               <span className="text-[0.65rem] font-semibold tracking-[0.22em] text-accent uppercase">
-                Vanaf
+                Prijs
               </span>
               <p className="font-display text-3xl text-heading sm:text-4xl">
-                {formatPrice(startingPrice)}
+                {formatPrice(trip.price.amount)}
               </p>
-              <p className="mt-1 text-xs text-muted">
-                Termijnen mogelijk
-              </p>
+              {trip.price.installmentsAvailable && (
+                <p className="mt-1 text-xs text-muted">Termijnen mogelijk</p>
+              )}
             </div>
           </div>
         </div>
