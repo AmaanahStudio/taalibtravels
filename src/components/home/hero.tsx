@@ -35,8 +35,11 @@ export function Hero({
     },
   ];
 
+  // De onderruimte hieronder volgt bewust de `default`-spacing van `Section`.
+  // De sectie eronder staat op `continue`, zodat de sprong naar "Ons aanbod"
+  // even groot is als die tussen de secties daaronder.
   return (
-    <section className="relative isolate overflow-hidden pt-24 pb-16 sm:pt-28 lg:pt-32 lg:pb-24">
+    <section className="relative isolate overflow-hidden pt-24 pb-16 sm:pt-28 sm:pb-20 lg:pt-32 lg:pb-28">
       <Container>
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           {/* Tekstkolom */}

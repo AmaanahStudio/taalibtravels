@@ -45,7 +45,7 @@ export function HeroVideo({ className }: { className?: string }) {
         muted
         loop
         playsInline
-        aria-label="Sfeerbeelden van eerdere Umrah-reizen met TaalibTravels"
+        aria-label="Beelden van eerdere Umrah-reizen met TaalibTravels"
       >
         <source src="/videos/hero-compilatie.mp4" type="video/mp4" />
       </video>

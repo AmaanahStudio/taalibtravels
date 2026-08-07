@@ -86,7 +86,6 @@ export function TripDetail({ trip }: { trip: Trip }) {
         <SectionHeading
           eyebrow="Inclusief"
           title="Wat zit erbij"
-          intro="Dit zit allemaal in de prijs."
         />
         <FeatureList items={trip.inclusions} className="mt-10" />
       </Section>
@@ -115,9 +114,8 @@ export function TripDetail({ trip }: { trip: Trip }) {
       {/* Fotogalerij */}
       <Section id="fotos" spacing="continue">
         <SectionHeading
-          eyebrow="Sfeerbeeld"
+          eyebrow="BeeldEN"
           title="Foto's"
-          intro="Beelden van eerdere reizen: de rituelen, de lessen en de momenten ertussenin."
         />
         <GallerySection images={trip.gallery} featureFirst className="mt-10" />
       </Section>

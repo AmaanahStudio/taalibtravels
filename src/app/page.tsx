@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { Hero } from "@/components/home/hero";
-import { FeatureList } from "@/components/trips/feature-list";
 import { GallerySection } from "@/components/trips/gallery-section";
 import { TripCard } from "@/components/trips/trip-card";
 import { Button } from "@/components/ui/button";
@@ -24,23 +23,12 @@ export default function HomePage() {
     <>
       <Hero trip={trip} />
 
-      {/* Wat er bij elke reis inbegrepen zit — bewust algemeen, want dit is de
-          homepage en geen detailpagina van één reis. */}
-      <Section id="inclusief">
-        <SectionHeading
-          eyebrow="Inclusief"
-          title="Wat zit erbij"
-          intro="Bij elke reis zit hetzelfde pakket, zonder verrassingen achteraf."
-        />
-        <FeatureList items={trip.inclusions} className="mt-10" />
-      </Section>
-
-      {/* Reisaanbod */}
+      {/* Reisaanbod. "Wat zit erbij" staat bewust alleen op de detailpagina van
+          een reis, niet hier. */}
       <Section id="reizen" spacing="continue">
         <SectionHeading
           eyebrow="Ons aanbod"
           title="Onze reizen"
-          intro="Elke reis heeft eigen data en een eigen prijs. Bekijk de details van de reis die bij jou past."
         />
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -61,9 +49,8 @@ export default function HomePage() {
 
       <Section id="fotos" spacing="continue">
         <SectionHeading
-          eyebrow="Sfeerbeeld"
+          eyebrow="Beelden"
           title="Foto's"
-          intro="Beelden van eerdere reizen: de rituelen, de lessen en de momenten ertussenin."
         />
         <GallerySection images={gallery} featureFirst className="mt-10" />
       </Section>
