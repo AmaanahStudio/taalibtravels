@@ -2,6 +2,10 @@ import type { MetadataRoute } from "next";
 
 import { SITE, getTrips } from "@/lib/content";
 
+// Verplicht bij `output: "export"`: zonder deze regel weigert de build een
+// metadata-route te genereren, omdat hij die anders per request zou draaien.
+export const dynamic = "force-static";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: SITE.url, changeFrequency: "weekly", priority: 1 },

@@ -1,0 +1,18 @@
+{
+  // Assets-only Worker: er is geen `main`, want de site is een statische export
+  // (`output: "export"`). Cloudflare serveert `out/` dan rechtstreeks van het
+  // netwerk, zonder dat er Worker-code per request draait.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "taalibtravels",
+  "compatibility_date": "2026-08-12",
+  "assets": {
+    "directory": "./out",
+    // Next.js schrijft de not-found-pagina naar 404.html; zonder deze regel
+    // krijgt een onbekende URL een lege Cloudflare-fout in plaats van onze
+    // eigen 404.
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

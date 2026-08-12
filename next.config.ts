@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
     // regel kiest Turbopack die map als workspace-root.
     root: path.resolve(import.meta.dirname),
   },
+  output: "export",
+  images: {
+    unoptimized: true,
+  },
 
   // TODO(backend): zodra foto's van een CDN of uit MongoDB/GridFS komen, voeg
   // je hier `images.remotePatterns` toe met het toegestane domein. Zolang alles
