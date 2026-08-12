@@ -1,0 +1,67 @@
+{
+  "hero": {
+    "headingPrimary": "Umrah reizen",
+    "headingSecondary": "met Nederlandstalige begeleiding",
+    "intro": "Wij organiseren Umrah-reizen vanuit België en Nederland, in kleine groepen en met begeleiding in het Nederlands. Vlucht, verblijf in Makkah en Madinah, visum en het volledige programma regelen wij — jij houdt je bezig met waarvoor je gaat."
+  },
+  "intro": {
+    "eyebrow": "Wie we zijn",
+    "heading": "Umrah vanuit België en Nederland",
+    "paragraphs": [
+      "TaalibTravels organiseert Umrah-reizen voor wie in het Nederlands begeleid wil worden. De groepen blijven klein, de begeleiding gaat de hele reis mee en het programma is compleet: heen- en terugvlucht, verblijf in zowel Makkah als Madinah, het visum, ziyarah met uitleg ter plaatse en dagelijkse lessen.",
+      "Voor veel deelnemers is het de eerste keer dat ze naar Makkah en Madinah gaan. Dat brengt vragen mee — over het visum, over de rituelen, over wat je meeneemt. Die vragen nemen we weg vóór je vertrekt, en beantwoorden we onderweg opnieuw wanneer ze aan de orde zijn."
+    ]
+  },
+  "usps": {
+    "eyebrow": "Waarom TaalibTravels",
+    "heading": "Wat je van ons mag verwachten",
+    "items": [
+      {
+        "icon": "guide",
+        "title": "Begeleiding in het Nederlands",
+        "body": "Van vertrek tot terugkomst loopt er een begeleider met je mee. We werken met één begeleider per tien deelnemers, zodat je vraag altijd aan bod komt."
+      },
+      {
+        "icon": "education",
+        "title": "Lessen onderweg",
+        "body": "Dagelijkse lessen, kort en praktisch, zodat je weet wat je doet en waarom. Ziyarah in beide steden hoort erbij, met uitleg ter plaatse."
+      },
+      {
+        "icon": "passport",
+        "title": "Alles op voorhand geregeld",
+        "body": "Vlucht, hotel in Makkah én Madinah en het visum zitten in de prijs. Je hoeft zelf niets aan te vragen of apart te boeken."
+      },
+      {
+        "icon": "activities",
+        "title": "Ruimte om te ontspannen",
+        "body": "Geen schema van 's ochtends tot 's avonds. Tussen de rituelen en de lessen door is er tijd om samen te eten en er met de groep op uit te trekken."
+      }
+    ]
+  },
+  "steps": {
+    "eyebrow": "Zo werkt het",
+    "heading": "Van vraag tot vertrek",
+    "items": [
+      {
+        "title": "Kies je reis",
+        "body": "Bekijk de vertrekdata, de prijzen en wat er bij elke reis inbegrepen is."
+      },
+      {
+        "title": "Stuur ons een bericht",
+        "body": "App ons via WhatsApp. We lopen samen de details door — je legt niets vast door een vraag te stellen."
+      },
+      {
+        "title": "Wij regelen de rest",
+        "body": "Vlucht, verblijf en visum komen op onze schouders. Betalen kan in drie tot vier termijnen, zolang je het op voorhand laat weten."
+      },
+      {
+        "title": "Vertrekken",
+        "body": "Je reist met een kleine groep en Nederlandstalige begeleiding, van de heenvlucht tot je weer thuis bent."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "Vragen",
+    "heading": "Veelgestelde vragen"
+  }
+}

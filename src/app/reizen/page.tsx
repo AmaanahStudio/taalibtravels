@@ -1,34 +1,50 @@
 import type { Metadata } from "next";
 
+import { JsonLd } from "@/components/seo/json-ld";
 import { TripCard } from "@/components/trips/trip-card";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { SITE, getTrips } from "@/lib/content";
+import { collectionPageSchema, graph, tripListSchema } from "@/lib/schema";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Onze Umrah-reizen",
-  description:
-    "Bekijk alle Umrah-reizen van TaalibTravels: data, prijzen en wat er inbegrepen is. Van de budgetreis in november tot de laatste tien nachten van Ramadan.",
-  alternates: { canonical: "/reizen" },
-  openGraph: {
-    title: `Onze Umrah-reizen | ${SITE.name}`,
-    description:
-      "Alle Umrah-reizen van TaalibTravels met data, prijzen en inbegrepen diensten.",
-    url: `${SITE.url}/reizen`,
-  },
-};
+const TITLE = "Umrah reizen 2026 — data en prijzen";
+const DESCRIPTION =
+  "Alle Umrah-reizen van TaalibTravels op een rij: vertrekdata, prijzen en wat er inbegrepen is. Kleine groepen, Nederlandstalige begeleiding en vertrek vanuit België en Nederland.";
+
+export const metadata: Metadata = pageMetadata({
+  title: TITLE,
+  description: DESCRIPTION,
+  path: "/reizen",
+});
 
 export default function TripsPage() {
   const trips = getTrips();
 
   return (
     <Section spacing="none" className="pt-24 pb-16 sm:pt-28 sm:pb-20 lg:pb-28">
+      <JsonLd
+        data={graph(
+          collectionPageSchema("/reizen", TITLE, DESCRIPTION),
+          tripListSchema(trips),
+        )}
+      />
+
+      <Breadcrumbs
+        trail={[
+          { name: "Home", path: "/" },
+          { name: "Reizen", path: "/reizen" },
+        ]}
+        className="mb-8"
+      />
+
       {/* TODO(content): laat de klant deze belofte nalezen — het is de eerste
           zin die een bezoeker op deze pagina leest. */}
       <SectionHeading
         as="h1"
         eyebrow="Ons aanbod"
-        title="Kies je reis"
+        title={TITLE}
         intro="Elke reis gaat met een kleine groep en is compleet: vlucht, hotel in Makkah en Madinah, visum en Nederlandstalige begeleiding. Kies de datum die je past — de rest regelen wij."
       />
 

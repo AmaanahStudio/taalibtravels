@@ -1,0 +1,26 @@
+# HTTP-headers voor Cloudflare Workers (assets). Next kopieert public/ naar
+# out/, en Wrangler leest dit bestand daar. Puur statisch: er draait geen
+# Worker-code per request.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  # Twee jaar HTTPS afdwingen. Bewust zonder `preload`: dat is een
+  # eenrichtingsinschrijving in de browserlijst en niets voor terloops aanzetten.
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+
+# De afgeleide foto's dragen hun breedte in de bestandsnaam, dus een gewijzigde
+# foto levert een nieuwe URL op. Ze mogen daarom onbeperkt gecachet worden.
+/images/opt/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# De RSC-payloads die Next naast elke pagina schrijft, zijn dezelfde inhoud in
+# een ander formaat. Ze staan nergens gelinkt, maar mochten ze toch gevonden
+# worden, dan horen ze niet als losse pagina in de zoekresultaten.
+/*.txt
+  X-Robots-Tag: noindex
+
+# ... behalve robots.txt zelf, dat juist gelezen moet worden.
+/robots.txt
+  X-Robots-Tag: all

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { JsonLd } from "@/components/seo/json-ld";
 import { TripDetail } from "@/components/trips/trip-detail";
-import { SITE, getTripBySlug, getTripSlugs } from "@/lib/content";
-import { formatDateLong, formatPrice } from "@/lib/utils";
+import { getTripBySlug, getTripSlugs } from "@/lib/content";
+import { graph, tripSchema } from "@/lib/schema";
+import { pageMetadata } from "@/lib/seo";
+import { formatDateLong, formatPrice, tripFullTitle } from "@/lib/utils";
 
 /** Bouwt alle detailpagina's statisch tijdens de build. */
 export function generateStaticParams() {
@@ -22,25 +25,14 @@ export async function generateMetadata(
 
   const description = `${trip.summary} Vertrek ${formatDateLong(trip.departureDate)} — ${formatPrice(trip.price.amount)} per persoon.`;
 
-  return {
-    title: `${trip.title} — ${trip.subtitle}`,
+  return pageMetadata({
+    title: tripFullTitle(trip),
     description,
-    alternates: { canonical: `/reizen/${trip.slug}` },
-    openGraph: {
-      type: "article",
-      title: `${trip.title} | ${SITE.name}`,
-      description,
-      url: `${SITE.url}/reizen/${trip.slug}`,
-      images: [
-        {
-          url: trip.coverImage.src,
-          width: trip.coverImage.width,
-          height: trip.coverImage.height,
-          alt: trip.coverImage.alt,
-        },
-      ],
-    },
-  };
+    path: `/reizen/${trip.slug}`,
+    image: trip.coverImage,
+    type: "article",
+    modifiedTime: trip.updatedAt,
+  });
 }
 
 export default async function TripDetailPage(
@@ -55,5 +47,12 @@ export default async function TripDetailPage(
     notFound();
   }
 
-  return <TripDetail trip={trip} />;
+  return (
+    <>
+      {/* Prijs en beschikbaarheid, zodat Google ze in het zoekresultaat kan
+          tonen. Het kruimelpad-schema zit in de Breadcrumbs-component. */}
+      <JsonLd data={graph(tripSchema(trip))} />
+      <TripDetail trip={trip} />
+    </>
+  );
 }

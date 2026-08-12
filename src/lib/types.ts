@@ -97,13 +97,42 @@ export interface NavLink {
   label: string;
 }
 
+/**
+ * De navigatie staat gesplitst: de navbar blijft kort, de footer linkt naar
+ * alles. Die footerlijst is meteen de interne bekabeling van de site — elke
+ * pagina is vanaf elke andere pagina bereikbaar, wat zoekmachines helpt alles
+ * te vinden.
+ */
+export interface Navigation {
+  main: NavLink[];
+  footer: NavLink[];
+}
+
+/**
+ * Postadres voor het `LocalBusiness`-schema.
+ *
+ * Zolang `street`, `postalCode` of `city` leeg is, laat `schema.ts` het adres
+ * volledig weg: een half adres is voor Google slechter dan geen adres.
+ */
+export interface SiteAddress {
+  street: string;
+  postalCode: string;
+  city: string;
+  region: string;
+  /** ISO 3166-1 alpha-2, bv. "BE". */
+  country: string;
+}
+
 /** Bedrijfsgegevens: één plek voor het nummer, de socials en de domeinnaam. */
 export interface SiteConfig {
   name: string;
   tagline: string;
   description: string;
   url: string;
+  /** OpenGraph-vorm, bv. "nl_BE". */
   locale: string;
+  /** Overige markten, bv. ["nl_NL"] — vult `og:locale:alternate`. */
+  alternateLocales: string[];
   email: string;
   whatsapp: {
     /** Weergavevorm, bv. "0489 28 94 90". */
@@ -115,11 +144,93 @@ export interface SiteConfig {
     handle: string;
     url: string;
   };
+  address: SiteAddress;
+  /** Landen waar we op werven, ISO 3166-1 alpha-2. */
+  areaServed: string[];
+  /** Grove prijsindicatie voor `LocalBusiness`, bv. "€€". */
+  priceRange: string;
+  verification: {
+    /** Token uit Google Search Console; leeg = geen meta-tag. */
+    google: string;
+  };
+  /** Vult het `VideoObject`-schema van de homepage-hero. */
+  heroVideo: {
+    name: string;
+    description: string;
+    /** ISO-8601 datum. */
+    uploadDate: string;
+    src: string;
+    poster: string;
+  };
 }
 
 export interface FaqItem {
   question: string;
   answer: string;
+  /** Kopje waaronder de vraag op de FAQ-pagina valt. */
+  category: string;
+  /** Toont de vraag ook op de homepage en de contactpagina. */
+  featured?: boolean;
+}
+
+/** Eén kop met bijbehorende tekst op een losse tekstpagina. */
+export interface ContentSection {
+  /** Anker in de URL en doel van de inhoudsopgave. */
+  id: string;
+  heading: string;
+  paragraphs: string[];
+  bullets?: string[];
+}
+
+/**
+ * Een losse tekstpagina (`/umrah`, `/over-ons`). Net als bij de reizen staat de
+ * tekst in JSON en kent alleen `content.ts` die bestanden.
+ */
+export interface ContentPage {
+  slug: string;
+  /** Titel voor `<title>` en de zoekresultaten. */
+  title: string;
+  description: string;
+  /** De `<h1>` op de pagina zelf; mag afwijken van `title`. */
+  heading: string;
+  intro: string;
+  sections: ContentSection[];
+  /** ISO-8601; vult `lastModified` in de sitemap en `dateModified` in het schema. */
+  updatedAt: string;
+}
+
+/** Eén reden om met ons te reizen, op de homepage. */
+export interface HomeUsp {
+  icon: IconKey;
+  title: string;
+  body: string;
+}
+
+/** Eén stap uit "Zo werkt het". */
+export interface HomeStep {
+  title: string;
+  body: string;
+}
+
+/** Kop van een homepage-sectie: klein label plus grote titel. */
+export interface SectionCopy {
+  eyebrow: string;
+  heading: string;
+}
+
+/** Alle losse teksten van de homepage. */
+export interface HomeContent {
+  hero: {
+    /** Eerste regel van de `<h1>`, groot. */
+    headingPrimary: string;
+    /** Tweede regel van de `<h1>`, in accentkleur. */
+    headingSecondary: string;
+    intro: string;
+  };
+  intro: SectionCopy & { paragraphs: string[] };
+  usps: SectionCopy & { items: HomeUsp[] };
+  steps: SectionCopy & { items: HomeStep[] };
+  faq: SectionCopy;
 }
 
 /*

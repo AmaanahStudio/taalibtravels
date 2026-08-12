@@ -10,7 +10,17 @@ const nextConfig: NextConfig = {
   },
   output: "export",
   images: {
-    unoptimized: true,
+    // Bij een statische export is de ingebouwde optimizer uitgeschakeld. Met
+    // een eigen loader krijgt `next/image` alsnog een echte `srcset`, wijzend
+    // naar de WebP-varianten die scripts/optimize-images.mjs vooraf schrijft.
+    // Zonder dit downloadt ook een telefoon de bron van 1400px.
+    loader: "custom",
+    loaderFile: "./src/lib/image-loader.ts",
+    // De bronfoto's zijn 1400px breed, dus grotere varianten leveren niets op.
+    // Deze twee lijsten samen moeten gelijk blijven aan WIDTHS in het script en
+    // in de loader.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1400],
+    imageSizes: [256, 384],
   },
 
   // TODO(backend): zodra foto's van een CDN of uit MongoDB/GridFS komen, voeg

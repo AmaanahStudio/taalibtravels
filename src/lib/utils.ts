@@ -90,6 +90,38 @@ export function formatPrice(amount: number) {
   return `€ ${formatAmount(amount)}`;
 }
 
+type TitledTrip = { title: string; subtitle: string };
+
+/**
+ * Splitst de naam van een reis in de titel en het deel van de ondertitel dat
+ * daar nog niet in staat.
+ *
+ * `title` en `subtitle` overlappen soms. "Umrah September" met ondertitel
+ * "September 2026" zou anders "Umrah September September 2026" opleveren — in
+ * de `<h1>`, in de paginatitel én in het kruimelpad, waar Google het overneemt.
+ * Woorden die al in de titel voorkomen vallen daarom weg; bij "Umrah Budget"
+ * met "November 2026" blijft de ondertitel volledig staan.
+ *
+ * De periode hoort er wél bij: mensen zoeken op "umrah september 2026", niet op
+ * "umrah september".
+ */
+export function tripTitleParts(trip: TitledTrip) {
+  const title = trip.title.toLowerCase();
+
+  const rest = trip.subtitle
+    .split(" ")
+    .filter((word) => !title.includes(word.toLowerCase()))
+    .join(" ");
+
+  return { title: trip.title, rest };
+}
+
+/** De volledige naam op één regel, voor titels, schema en kruimelpad. */
+export function tripFullTitle(trip: TitledTrip) {
+  const { title, rest } = tripTitleParts(trip);
+  return rest ? `${title} ${rest}` : title;
+}
+
 /**
  * Bouwt een wa.me-link met een voorgevuld bericht. Klanten boeken via hun
  * telefoon, dus dit is de belangrijkste conversie-actie van de site.

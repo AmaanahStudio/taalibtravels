@@ -1,9 +1,10 @@
 {
   "name": "TaalibTravels",
   "tagline": "Umrah reizen met begeleiding",
-  "description": "TaalibTravels organiseert betaalbare Umrah reizen met vlucht, verblijf in Makkah en Madinah, visum, dagelijkse begeleiding en opleidingen. Reserveer je plek via WhatsApp.",
+  "description": "TaalibTravels organiseert betaalbare Umrah reizen vanuit België en Nederland: vlucht, verblijf in Makkah en Madinah, visum, dagelijkse Nederlandstalige begeleiding en lessen. Reserveer je plek via WhatsApp.",
   "url": "https://www.taalibtravels.com",
   "locale": "nl_BE",
+  "alternateLocales": ["nl_NL"],
   "email": "info@taalibtravels.com",
   "whatsapp": {
     "display": "0489 28 94 90",
@@ -12,5 +13,24 @@
   "instagram": {
     "handle": "@taalibtravels",
     "url": "https://www.instagram.com/taalibtravels"
+  },
+  "address": {
+    "street": "",
+    "postalCode": "",
+    "city": "",
+    "region": "",
+    "country": "BE"
+  },
+  "areaServed": ["BE", "NL"],
+  "priceRange": "€€",
+  "verification": {
+    "google": ""
+  },
+  "heroVideo": {
+    "name": "Umrah met TaalibTravels — beelden van eerdere reizen",
+    "description": "Een korte compilatie van eerdere Umrah-reizen met TaalibTravels: Makkah en Madinah, de lessen onderweg en de momenten met de groep.",
+    "uploadDate": "2026-08-04",
+    "src": "/videos/hero-compilatie.mp4",
+    "poster": "/images/hero-poster.jpg"
   }
 }

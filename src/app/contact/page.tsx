@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
 
+import { FaqList } from "@/components/content/faq-list";
+import { JsonLd } from "@/components/seo/json-ld";
+import { Button } from "@/components/ui/button";
 import {
+  ArrowRightIcon,
   InstagramIcon,
   MailIcon,
   PhoneIcon,
 } from "@/components/ui/icons";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { WhatsAppCta } from "@/components/ui/whatsapp-cta";
-import { FAQ, SITE } from "@/lib/content";
+import { SITE, getFeaturedFaq } from "@/lib/content";
+import { contactPageSchema, graph } from "@/lib/schema";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Contact",
+export const metadata: Metadata = pageMetadata({
+  title: "Contact — Umrah reis boeken",
   description:
     "Neem contact op met TaalibTravels via WhatsApp, telefoon, e-mail of Instagram. We beantwoorden je vragen over onze Umrah-reizen meestal binnen enkele uren.",
-  alternates: { canonical: "/contact" },
-  openGraph: {
-    title: `Contact | ${SITE.name}`,
-    description:
-      "Vragen over een Umrah-reis? Bereik ons het snelst via WhatsApp.",
-    url: `${SITE.url}/contact`,
-  },
-};
+  path: "/contact",
+});
 
 const WHATSAPP_MESSAGE = `Assalaamu alaykum, ik heb een vraag over de Umrah-reizen van ${SITE.name}.`;
 
@@ -47,15 +47,19 @@ const CHANNELS = [
 ] as const;
 
 export default function ContactPage() {
+  const faq = getFeaturedFaq();
+
   return (
     <>
+      <JsonLd data={graph(contactPageSchema())} />
+
       <Section spacing="none" className="pt-24 pb-16 sm:pt-28 sm:pb-20">
         <SectionHeading
           as="h1"
           align="center"
           eyebrow="Contact"
           title="Neem contact op"
-          intro="Heb je een vraag? Stuur ons gerust een bericht."
+          intro="Heb je een vraag over een Umrah-reis, de prijs of het visum? Stuur ons gerust een bericht."
         />
 
         <WhatsAppCta
@@ -95,24 +99,21 @@ export default function ContactPage() {
         </ul>
       </Section>
 
-      {/* Veelgestelde vragen — vangt de meest voorkomende vragen alvast af. */}
+      {/* Alleen de meest gestelde vragen; de volledige lijst staat op de
+          FAQ-pagina, die er ook het FAQPage-schema voor draagt. */}
       <Section spacing="none" className="pb-20 sm:pb-24">
         <h2 className="display-title text-3xl text-heading sm:text-4xl">
           Veelgestelde vragen
         </h2>
 
-        <dl className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">
-          {FAQ.map((item) => (
-            <div key={item.question} className="flex flex-col gap-2">
-              <dt className="font-display text-base tracking-[0.06em] text-heading uppercase">
-                {item.question}
-              </dt>
-              <dd className="text-sm leading-relaxed text-body">
-                {item.answer}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <FaqList items={faq} className="mt-8" />
+
+        <div className="mt-10">
+          <Button href="/veelgestelde-vragen" variant="outline" size="lg">
+            Alle veelgestelde vragen
+            <ArrowRightIcon className="size-4" />
+          </Button>
+        </div>
       </Section>
     </>
   );

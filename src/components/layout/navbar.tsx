@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { CloseIcon, MenuIcon, WhatsAppIcon } from "@/components/ui/icons";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { NAV_LINKS, SITE } from "@/lib/content";
+import { NAV, SITE } from "@/lib/content";
 import { cn, whatsappUrl } from "@/lib/utils";
 
 const WHATSAPP_MESSAGE = `Assalaamu alaykum, ik heb een vraag over de Umrah-reizen van ${SITE.name}.`;
@@ -55,7 +55,7 @@ export function Navbar() {
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => (
+          {NAV.main.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -111,7 +111,7 @@ export function Navbar() {
         className="border-t border-line bg-page/95 backdrop-blur-xl md:hidden"
       >
         <div className="flex flex-col gap-1 px-5 py-6">
-          {NAV_LINKS.map((link) => (
+          {NAV.main.map((link) => (
             <Link
               key={link.href}
               href={link.href}

@@ -1,14 +1,18 @@
 import faqJson from "@/data/faq.json";
 import galleryJson from "@/data/gallery.json";
+import homeJson from "@/data/home.json";
 import imagesJson from "@/data/images.json";
 import inclusionsJson from "@/data/inclusions.json";
 import navigationJson from "@/data/navigation.json";
+import { PAGE_FILES } from "@/data/pages";
 import siteJson from "@/data/site.json";
 import { TRIP_FILES } from "@/data/trips";
 import type {
+  ContentPage,
   FaqItem,
+  HomeContent,
   ImageAsset,
-  NavLink,
+  Navigation,
   SiteConfig,
   Trip,
   TripInclusion,
@@ -18,12 +22,12 @@ import type {
  * De enige plek die de contentbestanden kent.
  *
  * Alle teksten, reizen en bedrijfsgegevens staan in `src/data`, opgesplitst per
- * onderwerp: `site.json`, `navigation.json`, `inclusions.json`, `images.json`,
- * `gallery.json`, `faq.json` en één bestand per reis onder `trips/`. Dit bestand
- * leest die in, pakt de verwijzingen uit naar de domeintypes en levert de
- * lees-functies die de pagina's gebruiken. Er is geen backend en geen database:
- * de JSON wordt bij het bouwen meegebundeld, dus alle pagina's kunnen statisch
- * gegenereerd worden.
+ * onderwerp: `site.json`, `navigation.json`, `home.json`, `inclusions.json`,
+ * `images.json`, `gallery.json`, `faq.json`, één bestand per reis onder `trips/`
+ * en één per tekstpagina onder `pages/`. Dit bestand leest die in, pakt de
+ * verwijzingen uit naar de domeintypes en levert de lees-functies die de
+ * pagina's gebruiken. Er is geen backend en geen database: de JSON wordt bij het
+ * bouwen meegebundeld, dus alle pagina's kunnen statisch gegenereerd worden.
  *
  * Twee dingen staan bewust één keer beschreven en worden elders alleen met een
  * id aangeroepen: de "Inclusief?"-regels en de foto's. Zo blijft een alt-tekst
@@ -54,8 +58,9 @@ interface RawTrip extends Omit<Trip, "inclusions" | "coverImage" | "gallery"> {
 const GALLERY_SIZE = 6;
 
 export const SITE = siteJson as SiteConfig;
-export const NAV_LINKS = navigationJson as NavLink[];
+export const NAV = navigationJson as Navigation;
 export const FAQ = faqJson as FaqItem[];
+export const HOME = homeJson as unknown as HomeContent;
 
 const IMAGES = imagesJson as RawImages;
 
@@ -183,4 +188,74 @@ export function getTripSlugs(): string[] {
 /** Gedeelde fotopool, voor de galerij op de homepage. */
 export function getGallery(): ImageAsset[] {
   return GALLERY;
+}
+
+/*
+ * Losse tekstpagina's (`/umrah`, `/over-ons`). Dezelfde opzet als de reizen:
+ * één JSON-bestand per pagina, een handgeschreven register, en hier het
+ * uitpakken plus de controle dat er geen twee dezelfde slug gebruiken.
+ */
+const PAGES = PAGE_FILES as unknown as ContentPage[];
+
+const PAGES_BY_SLUG = new Map<string, ContentPage>();
+
+for (const page of PAGES) {
+  if (PAGES_BY_SLUG.has(page.slug)) {
+    throw new Error(
+      `Twee tekstpagina's gebruiken de slug "${page.slug}". Een slug vormt de URL en moet uniek zijn.`,
+    );
+  }
+
+  PAGES_BY_SLUG.set(page.slug, page);
+}
+
+/**
+ * Eén tekstpagina. Gooit wanneer de slug niet bestaat in plaats van `null` te
+ * geven: deze pagina's hebben elk een eigen route die de slug hardcodeert, dus
+ * een misser is een typefout die de build hoort te breken — niet een 404 die
+ * pas een bezoeker opvalt.
+ */
+export function getContentPage(slug: string): ContentPage {
+  const page = PAGES_BY_SLUG.get(slug);
+
+  if (!page) {
+    throw new Error(
+      `src/data/pages: er is geen pagina met de slug "${slug}". Staat het bestand in het register in pages/index.ts?`,
+    );
+  }
+
+  return page;
+}
+
+/** Alle tekstpagina's, voor de sitemap. */
+export function getContentPages(): ContentPage[] {
+  return PAGES;
+}
+
+/** De handvol vragen die ook op de homepage en de contactpagina staan. */
+export function getFeaturedFaq(): FaqItem[] {
+  return FAQ.filter((item) => item.featured);
+}
+
+/**
+ * De volledige FAQ, gegroepeerd op categorie. De volgorde van de categorieën
+ * volgt die van `faq.json`, zodat de redactievolgorde leidend blijft.
+ */
+export function getFaqByCategory(): Array<{
+  category: string;
+  items: FaqItem[];
+}> {
+  const groups = new Map<string, FaqItem[]>();
+
+  for (const item of FAQ) {
+    const group = groups.get(item.category);
+
+    if (group) {
+      group.push(item);
+    } else {
+      groups.set(item.category, [item]);
+    }
+  }
+
+  return [...groups].map(([category, items]) => ({ category, items }));
 }

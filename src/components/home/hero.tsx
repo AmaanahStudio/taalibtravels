@@ -1,24 +1,28 @@
+import Link from "next/link";
+
 import { HeroVideo } from "@/components/home/hero-video";
 import { Button } from "@/components/ui/button";
 import { ArrowRightIcon } from "@/components/ui/icons";
 import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 import { Container } from "@/components/ui/section";
-import { SITE } from "@/lib/content";
+import { HOME, SITE } from "@/lib/content";
 import type { Trip } from "@/lib/types";
-import { formatPrice, splitDate } from "@/lib/utils";
+import { formatDateNumeric, formatPrice, splitDate } from "@/lib/utils";
 
 /**
  * Hero van de homepage, gebaseerd op de poster: een enorme titel, korte intro
  * en een duidelijke WhatsApp-CTA.
  *
- * Alles wat hier over de reis staat — titel, samenvatting, datum en prijs —
- * komt uit de eerstvolgende reis, zodat de homepage vanzelf meeschuift zodra
- * die voorbij is. Alleen de videocompilatie staat er los van.
+ * De `<h1>` komt uit `home.json` en staat dus vast. Eerder was het de titel van
+ * de eerstvolgende reis, waardoor de belangrijkste kop van de site meeschoof
+ * met de agenda — de homepage stond dan op "Umrah Budget" in plaats van op
+ * waar hij op gevonden moet worden. De reis zelf verdwijnt niet: hij staat als
+ * eerstvolgend vertrek boven de kop en linkt door naar zijn eigen pagina.
  */
 export function Hero({
   trip,
 }: {
-  /** De eerstvolgende reis; vult de hele hero. */
+  /** De eerstvolgende reis; vult het vertreklabel, de datums en de prijs. */
   trip: Trip;
 }) {
   const message = `Assalaamu alaykum, ik wil graag meer info over de Umrah-reizen van ${SITE.name}.`;
@@ -36,25 +40,42 @@ export function Hero({
   ];
 
   // De onderruimte hieronder volgt bewust de `default`-spacing van `Section`.
-  // De sectie eronder staat op `continue`, zodat de sprong naar "Ons aanbod"
-  // even groot is als die tussen de secties daaronder.
+  // De sectie eronder staat op `continue`, zodat de sprong naar de intro even
+  // groot is als die tussen de secties daaronder.
   return (
     <section className="relative isolate overflow-hidden pt-24 pb-16 sm:pt-28 sm:pb-20 lg:pt-32 lg:pb-28">
       <Container>
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           {/* Tekstkolom */}
           <div className="flex animate-fade-up flex-col gap-7">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-4">
+              <Link
+                href={`/reizen/${trip.slug}`}
+                className="group inline-flex w-fit items-center gap-2.5 rounded-full border border-line bg-surface px-4 py-2 text-xs font-semibold tracking-[0.14em] text-body uppercase transition-colors hover:border-accent/40 hover:text-heading"
+              >
+                <span
+                  aria-hidden="true"
+                  className="size-1.5 rounded-full bg-accent"
+                />
+                Eerstvolgend vertrek {formatDateNumeric(trip.departureDate)}
+                <ArrowRightIcon className="size-3.5 text-accent transition-transform group-hover:translate-x-0.5" />
+              </Link>
+
+              {/* De spatie hieronder is niet decoratief: de `<span>` is een
+                  blok, dus visueel staat er al een regelafbreking, maar zonder
+                  spatie plakt de tekstinhoud van de `<h1>` aan elkaar tot
+                  "Umrah reizenmet begeleiding". Dat is wat een zoekmachine
+                  uitleest. */}
               <h1 className="display-title text-6xl text-heading sm:text-7xl lg:text-8xl">
-                {trip.title.split(" ")[0]}
-                <span className="mt-1 block text-4xl text-accent sm:text-5xl lg:text-6xl">
-                  {trip.title.split(" ").slice(1).join(" ") || "Reizen"}
+                {HOME.hero.headingPrimary}{" "}
+                <span className="mt-1 block text-3xl text-accent sm:text-4xl lg:text-5xl">
+                  {HOME.hero.headingSecondary}
                 </span>
               </h1>
             </div>
 
             <p className="max-w-xl text-base leading-relaxed text-body sm:text-lg">
-              {trip.summary}
+              {HOME.hero.intro}
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">

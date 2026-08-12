@@ -5,7 +5,7 @@ import { DateRange } from "@/components/trips/date-block";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRightIcon } from "@/components/ui/icons";
 import type { Trip } from "@/lib/types";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn, formatPrice, tripFullTitle } from "@/lib/utils";
 
 /** Card voor het reisoverzicht: cover, datum, korte beschrijving en prijs. */
 export function TripCard({
@@ -85,11 +85,13 @@ export function TripCard({
         </div>
       </div>
 
+      {/* De hele card is klikbaar via deze stretched link. De naam met periode
+          erin is meteen de ankertekst waarop de reispagina gevonden wordt. */}
       <Link
         href={`/reizen/${trip.slug}`}
         className="absolute inset-0 rounded-3xl"
       >
-        <span className="sr-only">Bekijk details van {trip.title}</span>
+        <span className="sr-only">Bekijk details van {tripFullTitle(trip)}</span>
       </Link>
     </article>
   );

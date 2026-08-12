@@ -54,36 +54,50 @@ src/
 │   ├── page.tsx                Homepage
 │   ├── reizen/page.tsx         Overzicht van alle reizen
 │   ├── reizen/[slug]/page.tsx  Detailpagina per reis (statisch gegenereerd)
+│   ├── umrah/page.tsx          Gids: wat is Umrah en hoe bereid je je voor
+│   ├── over-ons/page.tsx       Over TaalibTravels
+│   ├── veelgestelde-vragen/    De volledige FAQ
 │   ├── contact/page.tsx        Contactpagina
 │   ├── not-found.tsx           404
-│   ├── sitemap.ts / robots.ts  SEO-basics
+│   ├── sitemap.ts / robots.ts  Sitemap (met foto's) en robots.txt
 │   └── globals.css             Tailwind-thema en design tokens
 ├── components/
 │   ├── brand/logo.tsx          SVG-logo (moskee + vliegtuig-swoosh)
 │   ├── layout/                 Navbar, Footer, achtergrondlaag
-│   ├── home/hero.tsx           Hero van de homepage
-│   ├── home/hero-video.tsx     Videocompilatie in de hero (muted, loop)
+│   ├── home/                   Hero, hero-video, USP-raster, stappenlijst
+│   ├── content/                ContentArticle (tekstpagina's), FaqList
+│   ├── seo/json-ld.tsx         Rendert een JSON-LD-blok
 │   ├── trips/                  TripCard, TripDetail, DateBlock, FeatureList,
 │   │                           PriceBlock, GallerySection
-│   └── ui/                     Button, Badge, Section, ThemeToggle,
+│   └── ui/                     Button, Badge, Section, Breadcrumbs, ThemeToggle,
 │                               WhatsAppButton, WhatsAppCta, iconen
 ├── data/
-│   ├── site.json               Naam, tagline, contactgegevens, socials
-│   ├── navigation.json         Links in navigatiebalk en footer
+│   ├── site.json               Naam, contactgegevens, socials, adres, hero-video
+│   ├── navigation.json         `main` (navbar) en `footer` (alle pagina's)
+│   ├── home.json               Alle losse teksten van de homepage
 │   ├── inclusions.json         De "Inclusief?"-regels, per id
 │   ├── images.json             Elke foto één keer beschreven, per id
 │   ├── gallery.json            Gedeelde fotopool (lijst foto-id's)
-│   ├── faq.json                Veelgestelde vragen
-│   └── trips/                  Eén bestand per reis + index.ts (het register)
+│   ├── faq.json                Veelgestelde vragen, met categorie
+│   ├── trips/                  Eén bestand per reis + index.ts (het register)
+│   └── pages/                  Eén bestand per tekstpagina + index.ts
 ├── lib/
 │   ├── content.ts              Leest src/data in en levert de lees-functies
+│   ├── seo.ts                  Bouwt de metadata van één pagina
+│   ├── schema.ts               Bouwt de JSON-LD (schema.org)
+│   ├── image-variants.ts       Breedtes en namen van de WebP-varianten
+│   ├── image-loader.ts         Custom loader voor next/image
 │   ├── theme.ts                Themasleutel + init-script (geen "use client")
 │   ├── types.ts                Domeinmodellen
 │   └── utils.ts                Datum-/prijsformattering, WhatsApp-links
 └── scripts/
     ├── generate-placeholders.mjs
+    ├── optimize-images.mjs
     └── build-hero-video.mjs
 ```
+
+Voor alles wat met vindbaarheid te maken heeft — welke schema's waar staan, en
+wat er buiten de code nog moet gebeuren — zie [SEO.md](SEO.md).
 
 ## Foto's
 
@@ -98,6 +112,13 @@ Alle foto's staan in `public/images` en worden beschreven in
    zien is. Als id gebruiken we de bestandsnaam zonder extensie.
 3. Zet die id in `gallery.json`, in de `gallery` van een reis, of als
    `coverImage` van een reis.
+
+Je hoeft zelf geen WebP te maken. `scripts/optimize-images.mjs` schrijft vóór
+elke `dev` en `build` responsieve WebP-varianten naar `public/images/opt/`, en
+`next/image` wijst daarnaartoe via een custom loader — nodig omdat de ingebouwde
+optimizer bij `output: "export"` uitstaat. Zonder die stap haalt ook een telefoon
+de bron van 1400px binnen. De varianten staan in `.gitignore`; ze worden altijd
+opnieuw gemaakt.
 
 ```json
 "klokkentoren": {

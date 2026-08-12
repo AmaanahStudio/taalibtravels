@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
 import { InstagramIcon, MailIcon, WhatsAppIcon } from "@/components/ui/icons";
-import { NAV_LINKS, SITE } from "@/lib/content";
+import { NAV, SITE } from "@/lib/content";
 import { whatsappUrl } from "@/lib/utils";
 
 const FOOTER_MESSAGE = `Assalaamu alaykum, ik wil graag meer info over de Umrah-reizen van ${SITE.name}.`;
@@ -32,7 +32,7 @@ export function Footer() {
               Menu
             </h2>
             <ul className="flex flex-col gap-3">
-              {NAV_LINKS.map((link) => (
+              {NAV.footer.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}

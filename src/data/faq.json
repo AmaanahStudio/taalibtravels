@@ -1,30 +1,93 @@
 [
   {
+    "question": "Wat is Umrah precies?",
+    "answer": "De Umrah is het bezoek aan de Masjid al-Haram in Makkah, waarbij je in staat van ihram de tawaf rond de Kaaba verricht, de sa'i tussen Safa en Marwa loopt en je haar afscheert of inkort. Anders dan de Hajj is de Umrah niet aan vaste dagen in het jaar gebonden: je kunt hem het hele jaar door verrichten.",
+    "category": "Umrah algemeen",
+    "featured": true
+  },
+  {
+    "question": "Wat is het verschil tussen Umrah en Hajj?",
+    "answer": "De Hajj vindt één keer per jaar plaats, in de maand Dhoel-Hijjah, en kent extra rituelen zoals het staan op Arafah en het verblijf in Mina en Muzdalifah. De Umrah kan het hele jaar door en bestaat uit ihram, tawaf, sa'i en het afscheren of inkorten van het haar. De Hajj is voor wie het kan een verplichting; de Umrah is dat niet.",
+    "category": "Umrah algemeen"
+  },
+  {
+    "question": "Wanneer is de beste periode voor een Umrah?",
+    "answer": "Dat hangt af van wat je zoekt. In de winter- en najaarsmaanden is het in Makkah en Madinah aangenamer van temperatuur en zijn de moskeeën rustiger, waardoor je meer ruimte hebt bij de Kaaba. Ramadan is het drukst en tegelijk het meest gezocht. Onze reizen liggen bewust verspreid over het jaar, zodat er altijd een datum is die past.",
+    "category": "Umrah algemeen"
+  },
+  {
+    "question": "Wat is er allemaal inbegrepen in de prijs?",
+    "answer": "De heen- en terugvlucht, het verblijf in zowel Makkah als Madinah, het visum, dagelijkse Nederlandstalige begeleiding, de activiteiten en de lessen onderweg. Op elke reispagina staat precies wat er bij die reis hoort.",
+    "category": "Boeken en betalen",
+    "featured": true
+  },
+  {
+    "question": "Hoe reserveer ik een plek?",
+    "answer": "Via WhatsApp. Stuur ons een bericht met de reis die je op het oog hebt, dan lopen we samen de details door en bevestigen we je plek. Er is geen formulier en je legt niets vast door alleen een vraag te stellen.",
+    "category": "Boeken en betalen",
+    "featured": true
+  },
+  {
     "question": "Kan ik in termijnen betalen?",
-    "answer": "Ja dat kan! Zolang er op voorhand wordt gecommuniceerd, kan dit in 3 à 4 keer betaald worden."
-  },
-  {
-    "question": "Zijn de reizen enkel voor broeders?",
-    "answer": "De meeste reizen zijn inderdaad enkel voor broeders. We hebben wel jaarlijks een familiale reis, waar zowel mannen als vrouwen mee kunnen."
-  },
-  {
-    "question": "Ik heb geen mahram, kan ik toch mee?",
-    "answer": "Nadat we deze vraag hebben voorgelegd bij de geleerden in Madinah kregen we als antwoord dat het toegestaan is zolang het de eerste umrah van diegene is en er geen aanwezige mahram is. Zusters kunnen met die voorwaarden mee op onze jaarlijkse familiale reis."
-  },
-  {
-    "question": "Hoelang duurt een reis met jullie?",
-    "answer": "Elke reis is tussen 11 en 13 dagen, inclusief de reisdagen."
-  },
-  {
-    "question": "Delen we de kamers met mensen die we zelf kiezen?",
-    "answer": "Ja, iedereen krijgt de keuze om te verblijven in de kamer met wie ze wensen te verblijven."
+    "answer": "Ja dat kan! Zolang er op voorhand wordt gecommuniceerd, kan dit in 3 à 4 keer betaald worden.",
+    "category": "Boeken en betalen",
+    "featured": true
   },
   {
     "question": "Hoelang op voorhand moet ik boeken?",
-    "answer": "Tot 1 maand voor de reis blijft de prijs hetzelfde. Daarna is er geen garantie dat de prijs niet verhoogt."
+    "answer": "Tot 1 maand voor de reis blijft de prijs hetzelfde. Daarna is er geen garantie dat de prijs niet verhoogt.",
+    "category": "Boeken en betalen"
+  },
+  {
+    "question": "Zijn de reizen enkel voor broeders?",
+    "answer": "De meeste reizen zijn inderdaad enkel voor broeders. We hebben wel jaarlijks een familiale reis, waar zowel mannen als vrouwen mee kunnen.",
+    "category": "Voor wie",
+    "featured": true
+  },
+  {
+    "question": "Ik heb geen mahram, kan ik toch mee?",
+    "answer": "Nadat we deze vraag hebben voorgelegd bij de geleerden in Madinah kregen we als antwoord dat het toegestaan is zolang het de eerste umrah van diegene is en er geen aanwezige mahram is. Zusters kunnen met die voorwaarden mee op onze jaarlijkse familiale reis.",
+    "category": "Voor wie"
+  },
+  {
+    "question": "Kan ik vanuit Nederland mee?",
+    "answer": "Onze begeleiding is volledig Nederlandstalig en deelnemers uit Nederland zijn welkom. Stuur ons een bericht via WhatsApp, dan bekijken we samen hoe je bij de groep aansluit.",
+    "category": "Voor wie"
+  },
+  {
+    "question": "Hoelang duurt een reis met jullie?",
+    "answer": "Elke reis is tussen 11 en 13 dagen, inclusief de reisdagen.",
+    "category": "De reis",
+    "featured": true
+  },
+  {
+    "question": "Hoe groot zijn de groepen?",
+    "answer": "We reizen bewust met kleine groepen en werken met één begeleider per tien deelnemers. Zo blijft er ruimte om vragen te stellen en raakt niemand uit het oog verloren.",
+    "category": "De reis"
+  },
+  {
+    "question": "Wat staat er naast de Umrah op het programma?",
+    "answer": "Rond de rituelen staan er dagelijkse lessen: kort, praktisch en in het Nederlands, zodat je weet wat je doet en waarom. Ziyarah in zowel Makkah als Madinah hoort erbij, met uitleg ter plaatse. Daarnaast is er tijd om samen te eten, te ontspannen en er met de groep op uit te trekken.",
+    "category": "De reis"
+  },
+  {
+    "question": "Delen we de kamers met mensen die we zelf kiezen?",
+    "answer": "Ja, iedereen krijgt de keuze om te verblijven in de kamer met wie ze wensen te verblijven.",
+    "category": "De reis"
   },
   {
     "question": "Bieden jullie ook privé pakketten aan?",
-    "answer": "Jazeker. De volledige reis kan ook privé gedaan worden, inclusief alle activiteiten."
+    "answer": "Jazeker. De volledige reis kan ook privé gedaan worden, inclusief alle activiteiten.",
+    "category": "De reis"
+  },
+  {
+    "question": "Heb ik een visum nodig?",
+    "answer": "Ja, voor Saoedi-Arabië heb je een visum nodig. Wij regelen dat voor je — het zit bij de prijs inbegrepen en is een jaar geldig. Je hoeft zelf dus niets aan te vragen.",
+    "category": "Praktisch"
+  },
+  {
+    "question": "Hoe lang moet mijn paspoort nog geldig zijn?",
+    "answer": "Saoedi-Arabië vraagt een paspoort dat bij aankomst nog minstens zes maanden geldig is. Controleer dat ruim op tijd: een paspoort vernieuwen duurt al gauw enkele weken. Twijfel je? Stuur ons een bericht, dan kijken we mee.",
+    "category": "Praktisch"
   }
 ]

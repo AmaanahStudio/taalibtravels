@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/optimize-images.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/optimize-images.mjs",
     "build": "next build",
+    "optimize-images": "node scripts/optimize-images.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

@@ -15,6 +15,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `npm run typecheck` | `tsc --noEmit`                                          |
 | `npm run typegen`   | Genereert de `PageProps`/`LayoutProps` route-types      |
 | `npm run hero-video`| Bouwt `public/videos/hero-compilatie.mp4` + poster-frame |
+| `npm run optimize-images` | Schrijft de WebP-varianten in `public/images/opt/` |
+
+`optimize-images` draait automatisch vóór `dev` en `build` (via `predev` /
+`prebuild`) en is idempotent: hij codeert alleen opnieuw wat verouderd is. De
+uitvoer staat in `.gitignore` — het zijn afgeleide bestanden.
 
 `npm run typecheck` faalt op een verse clone tot de route-types bestaan — draai eerst
 `npm run typegen` (of `dev`/`build`).
@@ -37,14 +42,17 @@ kent; [src/lib/types.ts](src/lib/types.ts) beschrijft de vorm ná het uitpakken.
 
 | Bestand                 | Bevat                                                    |
 | ----------------------- | -------------------------------------------------------- |
-| `site.json`             | Naam, tagline, WhatsApp, e-mail, Instagram, domein        |
-| `navigation.json`       | De links in navigatiebalk en footer                       |
+| `site.json`             | Naam, tagline, WhatsApp, e-mail, Instagram, domein, adres, hero-video |
+| `navigation.json`       | `main` (navigatiebalk) en `footer` (alle pagina's)        |
+| `home.json`             | Alle losse teksten van de homepage                        |
 | `inclusions.json`       | De "Inclusief?"-regels, per id                            |
 | `images.json`           | Elke foto één keer: `src`, `alt`, `width`, `height`, per id |
 | `gallery.json`          | Gedeelde fotopool — een lijst foto-id's                   |
-| `faq.json`              | Veelgestelde vragen                                       |
+| `faq.json`              | Veelgestelde vragen, met `category` en optioneel `featured` |
 | `trips/<slug>.json`     | Eén bestand per reis                                      |
 | `trips/index.ts`        | Register: welke reisbestanden bestaan                     |
+| `pages/<slug>.json`     | Eén bestand per tekstpagina (`umrah`, `over-ons`)         |
+| `pages/index.ts`        | Register: welke tekstpagina's bestaan                     |
 
 Twee dingen staan bewust één keer beschreven en worden elders alleen met een **id**
 aangeroepen: de inclusies en de foto's. Een reis heeft dus `"coverImage": "trip-umrah-budget"`
@@ -74,9 +82,40 @@ kennen:
   component belandt (de navbar) — de map uitlezen met `fs` kan dus niet.
 
 Consumeer content via de functies uit `content.ts` (`getTrips`, `getTripBySlug`,
-`getNextTrip`, `getTripSlugs`, `getGallery`) en de constanten
-`SITE` / `NAV_LINKS` / `FAQ` — importeer nooit een bestand uit `src/data` rechtstreeks in
-een component.
+`getNextTrip`, `getTripSlugs`, `getGallery`, `getContentPage`, `getContentPages`,
+`getFeaturedFaq`, `getFaqByCategory`) en de constanten `SITE` / `NAV` / `FAQ` /
+`HOME` — importeer nooit een bestand uit `src/data` rechtstreeks in een
+component.
+
+### SEO
+
+Drie modules, elk met één taak. Zie [SEO.md](SEO.md) voor het geheel, inclusief
+wat er buiten de code nog moet gebeuren.
+
+- **[seo.ts](src/lib/seo.ts)** — `pageMetadata()` bouwt titel, canonical,
+  OpenGraph en Twitter-card. **Elke pagina hoort hierlangs te gaan.** Next merget
+  metadata namelijk *ondiep*: zodra een pagina een eigen `openGraph` zet,
+  vervangt die het hele object uit de layout, inclusief `images` en `siteName`.
+  Zo verloren `/reizen` en `/contact` eerder hun deelafbeelding.
+- **[schema.ts](src/lib/schema.ts)** — de enige plek die schema.org kent. Bouwt
+  de JSON-LD uit dezelfde data als de pagina toont, zodat opmaak en zichtbare
+  inhoud niet uit elkaar kunnen lopen. `<JsonLd>` rendert het en ontsnapt `<`.
+  Het bedrijf en de site staan één keer beschreven, in de root layout, met een
+  vaste `@id` waar de pagina's naar verwijzen in plaats van hem te herhalen.
+- **[image-variants.ts](src/lib/image-variants.ts)** — de afspraak over
+  breedtes en bestandsnamen tussen `scripts/optimize-images.mjs`,
+  `image-loader.ts`, `next.config.ts` en de sitemap. Wijzig je de breedtes of de
+  overslaglijst, dan op alle plekken tegelijk.
+
+Twee dingen die makkelijk misgaan:
+
+- Een `<h1>` die uit twee elementen bestaat heeft een **expliciete spatie** nodig
+  tussen de delen. Een block-`<span>` breekt de regel visueel, maar de
+  tekstinhoud plakt zonder die spatie aan elkaar — en dat is wat een zoekmachine
+  uitleest.
+- `title` en `subtitle` van een reis overlappen soms ("Umrah September" +
+  "September 2026"). Gebruik `tripFullTitle` / `tripTitleParts` uit `utils.ts`
+  in plaats van ze zelf aan elkaar te plakken.
 
 ### Thema's en design tokens
 

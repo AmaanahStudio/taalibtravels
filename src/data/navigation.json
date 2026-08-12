@@ -1,5 +1,16 @@
-[
-  { "href": "/", "label": "Home" },
-  { "href": "/reizen", "label": "Reizen" },
-  { "href": "/contact", "label": "Contact" }
-]
+{
+  "main": [
+    { "href": "/", "label": "Home" },
+    { "href": "/reizen", "label": "Reizen" },
+    { "href": "/umrah", "label": "Umrah" },
+    { "href": "/contact", "label": "Contact" }
+  ],
+  "footer": [
+    { "href": "/", "label": "Home" },
+    { "href": "/reizen", "label": "Umrah reizen" },
+    { "href": "/umrah", "label": "Wat is Umrah" },
+    { "href": "/over-ons", "label": "Over ons" },
+    { "href": "/veelgestelde-vragen", "label": "Veelgestelde vragen" },
+    { "href": "/contact", "label": "Contact" }
+  ]
+}

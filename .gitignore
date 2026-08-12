@@ -20,6 +20,9 @@
 # production
 /build
 
+# afgeleide foto's — scripts/optimize-images.mjs schrijft ze vóór elke build
+/public/images/opt/
+
 # misc
 .DS_Store
 *.pem

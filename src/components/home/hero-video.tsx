@@ -12,6 +12,12 @@ import { cn } from "@/lib/utils";
  * we `prefers-reduced-motion` kunnen respecteren: wie beweging heeft uitgezet
  * krijgt het poster-frame te zien in plaats van een lus van ruim een minuut.
  *
+ * Het starten wacht bewust op een rustig moment. Met `preload="none"` gebeurt
+ * er niets tot `play()`, en dat gebeurt pas als de browser klaar is met de
+ * belangrijke dingen. Zo vecht een bestand van ruim twee megabyte niet meer met
+ * de tekst en de hero-foto om de eerste seconde — precies waar Google de LCP op
+ * meet. Het poster-frame staat er ondertussen gewoon.
+ *
  * TODO(content): vervang /videos/hero-compilatie.mp4 en /images/hero-poster.jpg
  * zodra er een nieuwe montage is — beide worden gegenereerd door
  * `npm run hero-video`.
@@ -20,14 +26,23 @@ export function HeroVideo({ className }: { className?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    // Autoplay kan geweigerd worden (bv. spaarstand op iOS). Dan blijft het
-    // poster-frame gewoon staan.
-    void video.play().catch(() => {});
+    const start = () => {
+      // Autoplay kan geweigerd worden (bv. spaarstand op iOS). Dan blijft het
+      // poster-frame gewoon staan.
+      void videoRef.current?.play().catch(() => {});
+    };
+
+    // `requestIdleCallback` ontbreekt op Safari; daar is een korte timeout de
+    // gangbare terugval.
+    if (typeof window.requestIdleCallback === "function") {
+      const handle = window.requestIdleCallback(start, { timeout: 3000 });
+      return () => window.cancelIdleCallback(handle);
+    }
+
+    const handle = window.setTimeout(start, 1200);
+    return () => window.clearTimeout(handle);
   }, []);
 
   return (
@@ -41,7 +56,7 @@ export function HeroVideo({ className }: { className?: string }) {
         ref={videoRef}
         className="aspect-[4/5] w-full object-cover"
         poster="/images/hero-poster.jpg"
-        preload="metadata"
+        preload="none"
         muted
         loop
         playsInline
