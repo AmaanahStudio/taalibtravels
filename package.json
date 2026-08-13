@@ -3,13 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm run images && next dev",
+    "prebuild": "npm run images",
     "build": "next build",
+    "images": "node scripts/build-images.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "typegen": "next typegen",
     "hero-video": "node scripts/build-hero-video.mjs",
+    "hero-video:web": "node scripts/build-hero-web.mjs",
     "preview": "next build && wrangler dev",
     "deploy": "next build && wrangler deploy"
   },

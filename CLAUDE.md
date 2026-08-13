@@ -14,7 +14,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `npm run lint`      | ESLint                                                  |
 | `npm run typecheck` | `tsc --noEmit`                                          |
 | `npm run typegen`   | Genereert de `PageProps`/`LayoutProps` route-types      |
+| `npm run images`    | Genereert de WebP-varianten in `public/images/generated` |
 | `npm run hero-video`| Bouwt `public/videos/hero-compilatie.mp4` + poster-frame |
+| `npm run hero-video:web` | Leidt daaruit de WebM en het WebP-poster af        |
 
 `npm run typecheck` faalt op een verse clone tot de route-types bestaan — draai eerst
 `npm run typegen` (of `dev`/`build`).
@@ -156,10 +158,29 @@ op **zes** liggende (3:2) foto's: met de grote tegel erbij vult dat precies het 
 een ander aantal blijft er een lege cel over — `resolveGallery` breekt de build als het er
 niet zes zijn.
 
+De bronfoto's worden nooit rechtstreeks geserveerd. `npm run images` maakt met `sharp`
+een WebP per breedte uit `scripts/image-sizes.mjs` in `public/images/generated` — een
+gegenereerde map die in `.gitignore` staat. Het draait automatisch als `prebuild`, en is
+incrementeel: alleen foto's die nieuwer zijn dan hun varianten worden opnieuw omgezet.
+`src/lib/image-loader.ts` wijst die varianten aan; zonder loader zou een statische export
+helemaal geen `srcset` opleveren en laadde elke telefoon de volle 1400px. Blijft de ladder
+in `image-sizes.mjs` niet gelijk aan `deviceSizes`/`imageSizes` in `next.config.ts`, dan
+vraagt de browser een bestand op dat niet bestaat.
+
 `scripts/build-hero-video.mjs` heeft een hardgecodeerd `CLIPS_DIR` naar een lokale
 Downloads-map; `npm run hero-video` draait niet zonder die constanten eerst aan te passen.
 Video en poster-frame komen uit dezelfde montage en horen altijd samen vernieuwd te worden.
-Houd het eindbestand onder ~5 MB — het speelt automatisch af, dus elke bezoeker downloadt
-het.
+Draai daarna `npm run hero-video:web`: dat leidt uit die twee de WebM en het WebP-poster af
+die de hero echt gebruikt. Dat script raakt de MP4 en de JPEG niet aan — nu de bronclips
+weg zijn, zijn dát de enige originelen die er nog zijn.
+
+De video staat bewust **niet** in de eerste lading: `hero-video.tsx` rendert de `<source>`
+pas als een `IntersectionObserver` aanslaat. Zet daar geen `autoPlay` of vaste `src` terug —
+dan haalt elke bezoeker weer 1,7 MB binnen vóór de pagina in beeld staat. Cloudflare
+beantwoordt een `Range`-request bovendien met het hele bestand, dus `preload` alleen helpt
+niet.
+
+Cache-headers staan in `public/_headers`. Zonder dat bestand serveert Cloudflare álles met
+`max-age=0, must-revalidate`, ook de content-gehashte bundels.
 
 Zie [README.md](README.md) voor de volledige uitleg over content, foto's en de hero-video.

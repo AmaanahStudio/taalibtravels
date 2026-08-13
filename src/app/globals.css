@@ -177,6 +177,32 @@
   }
 
   /*
+   * De twee accentgloeden achter de hele site. Bewust geschilderd als
+   * radial-gradient en niet als gekleurde cirkel met `filter: blur()`: een blur
+   * van 140px over een vlak van ruim 670px moet de GPU bij elke paint opnieuw
+   * rasteren, en die laag ligt `fixed` over het volledige scherm. Op een
+   * middenklasse-telefoon kost dat merkbaar tijd vóór het beeld staat. Een
+   * gradient geeft vrijwel hetzelfde resultaat en is in feite gratis.
+   *
+   * De kleuren komen uit de themavariabelen, dus licht en donker volgen vanzelf.
+   */
+  .ambient-glow {
+    background-image:
+      radial-gradient(
+        55rem 42rem at 88% -6%,
+        --alpha(var(--color-accent) / 20%),
+        --alpha(var(--color-accent) / 7%) 38%,
+        transparent 72%
+      ),
+      radial-gradient(
+        46rem 38rem at -8% 32%,
+        --alpha(var(--color-accent-strong) / 15%),
+        --alpha(var(--color-accent-strong) / 5%) 40%,
+        transparent 74%
+      );
+  }
+
+  /*
    * Het logo (public/images/logo.png) is zwarte artwork op een transparante
    * achtergrond. Het wordt hier als masker gebruikt in plaats van als gewone
    * afbeelding: zo neemt het de huidige tekstkleur over en is het dus zwart in

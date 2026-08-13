@@ -1,0 +1,18 @@
+# Cache-regels voor de Cloudflare Worker die `out/` serveert. Zonder dit bestand
+# krijgt élk asset `max-age=0, must-revalidate` — ook de content-gehashte
+# bundels — en hervalideert een telefoon bij elk bezoek ruim vijftien bestanden.
+# Dat is op mobiel direct merkbaar, want elke revalidatie kost een round trip.
+
+# Next.js zet een contenthash in deze bestandsnamen: een wijziging levert een
+# nieuwe naam op. Ze kunnen dus nooit verouderen en mogen een jaar vast blijven.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Foto's en video hebben wél een vaste naam en worden bij een nieuwe montage
+# overschreven. Vandaar een dag hard, daarna een week serveren terwijl de
+# nieuwe versie op de achtergrond wordt opgehaald.
+/images/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/videos/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

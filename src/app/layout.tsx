@@ -18,11 +18,16 @@ const anton = Anton({
   display: "swap",
 });
 
-/** Body-font. */
+/**
+ * Body-font. Alleen de gewichten die de site echt gebruikt: 400 als basis, 500
+ * voor `font-medium` en 600 voor `font-semibold`. Elk extra gewicht is een
+ * apart woff2-bestand dat vóór de eerste weergave wordt opgehaald, dus 300 en
+ * 700 kostten twee requests zonder dat er iets mee werd opgemaakt.
+ */
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 

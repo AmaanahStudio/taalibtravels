@@ -20,6 +20,9 @@
 # production
 /build
 
+# gegenereerde foto-varianten (scripts/build-images.mjs, draait bij elke build)
+/public/images/generated/
+
 # misc
 .DS_Store
 *.pem
