@@ -1,0 +1,39 @@
+{
+  "slug": "umrah-winter-december-2026",
+  "title": "Umrah Winterreis",
+  "subtitle": "December 2026",
+  "summary": "Umrah over de jaarwisseling, enkel voor broeders. Dertien dagen Makkah en Madinah in de koelste maanden van het jaar.",
+  "description": [
+    "Dertien dagen naar Makkah en Madinah, midden in de winter en over de jaarwisseling heen. Vluchten, verblijf, visum en het vervoer ter plaatse zijn op voorhand geregeld, zodat je onderweg enkel bezig hoeft te zijn met waarvoor je gaat.",
+    "December is een aangename periode om te gaan: overdag koel genoeg om ook buiten de moskee op pad te zijn. Ziyarah in beide steden hoort erbij, met uitleg ter plaatse.",
+    "Rond de rituelen staan er dagelijkse lessen: kort, praktisch en in het Nederlands. Daartussen is er ruimte om samen te eten, te ontspannen en er met de groep op uit te trekken.",
+    "Enkel voor broeders, met een beperkt aantal plaatsen. Betalen in termijnen is mogelijk — laat het ons weten bij je aanmelding."
+  ],
+  "departureDate": "2026-12-23",
+  "returnDate": "2027-01-05",
+  "price": {
+    "amount": 2399.99,
+    "currency": "EUR",
+    "installmentsAvailable": true,
+    "note": "per persoon"
+  },
+  "inclusions": [
+    "flight",
+    "stay",
+    "visa",
+    "guidance",
+    "activities",
+    "education"
+  ],
+  "coverImage": "trip-umrah-comfort",
+  "gallery": [
+    "les-geleerde",
+    "ihram-onderweg",
+    "kaaba-deur",
+    "haram-nacht",
+    "deelnemer-portret",
+    "zwembad-rust"
+  ],
+  "audience": "brothers",
+  "status": "published"
+}

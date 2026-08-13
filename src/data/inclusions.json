@@ -11,6 +11,10 @@
     "label": "Visum (1 jaar geldig)",
     "icon": "passport"
   },
+  "transport": {
+    "label": "Vervoer ter plaatse",
+    "icon": "transport"
+  },
   "guidance": {
     "label": "Begeleiding",
     "icon": "guide"

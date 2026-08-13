@@ -68,8 +68,11 @@ export function TripCard({
               Vanaf
             </span>
             {/* `whitespace-nowrap` houdt het euroteken bij het bedrag, ook in
-                een smalle kolom. */}
-            <span className="font-display text-2xl whitespace-nowrap text-heading sm:text-3xl">
+                een smalle kolom. De prijs blijft bewust op `text-2xl`: bij
+                `text-3xl` past hij in het 3-koloms raster niet meer naast de
+                knop, en Anton heeft proportionele cijfers — een bedrag met een
+                2 vooraan is breder dan hetzelfde bedrag met een 1. */}
+            <span className="font-display text-2xl whitespace-nowrap text-heading">
               {formatPrice(trip.price.amount)}
             </span>
             {trip.price.installmentsAvailable && (
@@ -77,9 +80,11 @@ export function TripCard({
             )}
           </div>
 
-          {/* De hele card is klikbaar dankzij de stretched link hieronder. */}
+          {/* De hele card is klikbaar dankzij de stretched link hieronder; het
+              korte label houdt de knop naast de prijs in het smalste raster.
+              De volledige omschrijving staat in de sr-only tekst van die link. */}
           <span className="inline-flex items-center gap-2 rounded-full border border-line-strong px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-heading transition-all group-hover:border-accent/60 group-hover:bg-accent/10 group-hover:text-accent">
-            Bekijk details
+            Details
             <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" />
           </span>
         </div>
