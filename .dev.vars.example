@@ -2,12 +2,17 @@
 # en vul in. In productie staan deze waarden niet in een bestand maar achter
 # `wrangler secret put <naam>`.
 
+# Waarmee je inlogt op /admin. Een gebruikersnaam of e-mailadres; hoofdletters
+# maken niet uit. Geen geheim, maar leeg mag hij niet zijn.
+ADMIN_GEBRUIKER="beheer@voorbeeld.be"
+
 # Het wachtwoord voor /admin. Minimaal 16 tekens, anders weigert de Worker te
 # starten met beheer. Genereer een willekeurige waarde en bewaar hem in een
 # wachtwoordmanager.
 ADMIN_WACHTWOORD="verander-dit-lokaal-1234"
 
-# Ondertekent de sessiecookie. Wijzig je deze, dan is iedereen meteen uitgelogd.
+# Ondertekent de sessiecookie, samen met een vingerafdruk van bovenstaande twee.
+# Wijzig je deze of een van die twee, dan is iedereen meteen uitgelogd.
 # Willekeurig, minimaal 16 tekens, en een andere waarde dan het wachtwoord.
 ADMIN_SESSIE_SECRET="verander-dit-ook-lokaal-5678"
 
@@ -15,7 +20,3 @@ ADMIN_SESSIE_SECRET="verander-dit-ook-lokaal-5678"
 # maar in productie hoort hier de echte secret key van je widget.
 # De bijbehorende publieke site key staat in src/data/giveaway.json.
 TURNSTILE_SECRET="1x0000000000000000000000000000000AA"
-
-# Peper voor de IP-hash in de database. Zonder salt is een IPv4-hash terug te
-# rekenen door simpelweg alle adressen te proberen.
-IP_SALT="verander-dit-in-productie"

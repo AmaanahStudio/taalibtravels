@@ -105,9 +105,10 @@ src/
 │   └── build-hero-video.mjs
 └── worker/                     De enige servercode; draait alleen op /api/*
     ├── index.ts                Router en handlers
-    ├── auth.ts                 Sessiecookie en wachtwoordcontrole
+    ├── auth.ts                 Sessiecookie en inlogcontrole
     ├── csv.ts                  CSV-export
-    └── schema.sql              Tabel `deelnemers` in D1
+    ├── schema.sql              Tabel `deelnemers` in D1
+    └── migraties/              Genummerde wijzigingen op een bestaande database
 ```
 
 > `src/lib/leads.ts` en `src/lib/api.ts` worden door zowel de site als de Worker
@@ -267,7 +268,13 @@ begint hoort het daar al te lezen.
 Tegen misbruik staan er drie lagen: een Turnstile-captcha, een unieke index op
 `email` (dus één inschrijving per adres), en een verborgen honeypot-veld. Een
 inzending die daarin blijft hangen krijgt gewoon een bevestiging te zien maar
-wordt niet opgeslagen.
+wordt niet opgeslagen — wél met een regel in de Worker-logs, want als een
+browser-autofill dat verborgen veld invult, verlies je een échte deelnemer.
+
+Er wordt bewust **geen IP-adres** bewaard, ook niet gehasht. Dat stond er eerst
+wel, maar het werd nergens gebruikt, en een SHA-256 over de vier miljard
+IPv4-adressen is met de salt in seconden terug te rekenen — "onomkeerbaar" was
+dus te veel gezegd. Turnstile en de rate limit doen het anti-misbruikwerk al.
 
 ### Eenmalig opzetten
 
@@ -276,10 +283,10 @@ npx wrangler d1 create taalibtravels-leads       # id in wrangler.jsonc zetten
 npx wrangler d1 execute taalibtravels-leads --remote --file=./worker/schema.sql
 npx wrangler d1 execute taalibtravels-leads --local  --file=./worker/schema.sql
 
+npx wrangler secret put ADMIN_GEBRUIKER          # gebruikersnaam of e-mail
 npx wrangler secret put ADMIN_WACHTWOORD         # minimaal 16 tekens
 npx wrangler secret put ADMIN_SESSIE_SECRET      # willekeurig, 32+ tekens
 npx wrangler secret put TURNSTILE_SECRET
-npx wrangler secret put IP_SALT
 ```
 
 Lokaal komen diezelfde waarden uit `.dev.vars`; `.dev.vars.example` is het
@@ -292,21 +299,54 @@ De secret key wordt het Worker-secret hierboven; de site key hoort in
 zet `/giveaway` er zichtbaar een waarschuwing bij — die sleutel laat namelijk
 élke bot door.
 
-Ontbreekt `ADMIN_WACHTWOORD` of `ADMIN_SESSIE_SECRET`, of zijn ze te kort, dan
-antwoordt alles onder `/api/admin/` met **503**. Beheer gaat liever helemaal
-dicht dan half open: met een lege sessiesleutel is een cookie te vervalsen.
+Ontbreekt een van de drie admin-secrets, of zijn ze te kort, dan antwoordt alles
+onder `/api/admin/` met **503** — het inschrijfformulier blijft dan gewoon werken.
+Beheer gaat liever helemaal dicht dan half open: met een lege sessiesleutel is een
+cookie te vervalsen.
+
+### Schemawijzigingen
+
+`worker/schema.sql` beschrijft de tabel zoals hij hoort te zijn; voor een database
+die al bestaat staan de losse stappen genummerd in `worker/migraties/`. Toepassen:
+
+```bash
+npx wrangler d1 execute taalibtravels-leads --local  --file=./worker/migraties/<nummer>-<naam>.sql
+npx wrangler d1 execute taalibtravels-leads --remote --file=./worker/migraties/<nummer>-<naam>.sql
+```
+
+Verwijdert een migratie een kolom, **deploy dan eerst de code die die kolom niet
+meer schrijft.** Andersom schrijft de nog draaiende oude Worker naar iets dat niet
+meer bestaat, en breekt elke inschrijving.
 
 ### Het overzicht gebruiken
 
-`/admin` vraagt om het wachtwoord en toont daarna alle inschrijvingen, met een
-zoekveld, een knop om alle e-mailadressen te kopiëren, een CSV-export en een
-verwijderknop per rij. De pagina zelf is statische HTML zonder gegevens erin —
-alles komt via de API achter de sessiecontrole binnen, want bij een statische
-export staat elk gegenereerd bestand publiek op het netwerk.
+`/admin` vraagt om gebruikersnaam en wachtwoord, en toont daarna alle
+inschrijvingen, met een zoekveld, een knop om alle e-mailadressen te kopiëren, een
+CSV-export en een verwijderknop per rij. De pagina zelf is statische HTML zonder
+gegevens erin — alles komt via de API achter de sessiecontrole binnen, want bij een
+statische export staat elk gegenereerd bestand publiek op het netwerk.
+
+De sessie is een cookie met een ondertekend vervalmoment plus een vingerafdruk van
+de huidige inloggegevens. Daardoor is **je wachtwoord of gebruikersnaam wijzigen
+meteen een "log overal uit"**: elke openstaande sessie is op slag ongeldig. Dat is
+wat je nodig hebt als je vermoedt dat het wachtwoord gelekt is.
 
 De CSV is komma-gescheiden (RFC 4180, met UTF-8 BOM), zodat Mailchimp en Brevo
 hem zonder omwegen inlezen. Een cel die met `=`, `+`, `-` of `@` begint krijgt
 een apostrof mee, anders voert Excel de inhoud uit als formule.
+
+### Twee bewuste beperkingen
+
+**Een dubbel adres krijgt een 409 met "je doet al mee".** Daarmee kan iemand die
+adressen afgaat te weten komen wie er meedoet. Het alternatief — iedereen dezelfde
+bevestiging tonen — laat een eerlijke deelnemer die zich per ongeluk twee keer
+inschrijft in het ongewisse, en dat weegt hier zwaarder.
+
+**Er is geen dubbele opt-in.** Iemand kan dus het adres van een ander invullen, dat
+adres staat dan met "toestemming" op de lijst terwijl die persoon niets deed. Wil je
+dat sluiten, dan heb je een mailprovider nodig (Brevo is gratis tot 300 mails/dag):
+een `bevestigd`-kolom erbij, een bevestigingsmail met een unieke link, en alleen
+bevestigde adressen laten meetellen.
 
 ## Contact en reserveren
 

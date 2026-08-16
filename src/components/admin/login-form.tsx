@@ -15,6 +15,7 @@ import { API } from "@/lib/api";
  * geslaagde login gewist wordt.
  */
 export function LoginForm({ onIngelogd }: { onIngelogd: () => void }) {
+  const [gebruiker, setGebruiker] = useState("");
   const [wachtwoord, setWachtwoord] = useState("");
   const [bezig, setBezig] = useState(false);
   const [melding, setMelding] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export function LoginForm({ onIngelogd }: { onIngelogd: () => void }) {
       const antwoord = await fetch(API.login, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wachtwoord }),
+        body: JSON.stringify({ gebruiker, wachtwoord }),
       });
 
       if (antwoord.ok) {
@@ -61,6 +62,22 @@ export function LoginForm({ onIngelogd }: { onIngelogd: () => void }) {
         </p>
       </div>
 
+      {/*
+        Een gebruikersnaamveld met `autoComplete="username"` boven het
+        wachtwoord is wat een wachtwoordmanager nodig heeft om de inlog te
+        kunnen opslaan; met alleen een wachtwoordveld lukt hem dat niet.
+      */}
+      <Field
+        naam="gebruiker"
+        label="Gebruikersnaam of e-mail"
+        type="text"
+        autoComplete="username"
+        value={gebruiker}
+        onChange={(event) => setGebruiker(event.target.value)}
+        disabled={bezig}
+        autoFocus
+      />
+
       <Field
         naam="wachtwoord"
         label="Wachtwoord"
@@ -68,12 +85,18 @@ export function LoginForm({ onIngelogd }: { onIngelogd: () => void }) {
         autoComplete="current-password"
         value={wachtwoord}
         onChange={(event) => setWachtwoord(event.target.value)}
+        // De melding hangt bewust onder het wachtwoord en niet onder het veld
+        // dat fout was: de server vertelt niet welke van de twee het betrof, en
+        // dat mag dit scherm dan ook niet suggereren.
         fout={melding ?? undefined}
         disabled={bezig}
-        autoFocus
       />
 
-      <Button type="submit" size="lg" disabled={bezig || wachtwoord.length === 0}>
+      <Button
+        type="submit"
+        size="lg"
+        disabled={bezig || gebruiker.length === 0 || wachtwoord.length === 0}
+      >
         {bezig ? "Bezig…" : "Inloggen"}
       </Button>
     </form>

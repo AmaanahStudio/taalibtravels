@@ -1,16 +1,32 @@
 /**
- * Sessie en wachtwoordcontrole voor het admin-gedeelte.
+ * Sessie en inlogcontrole voor het admin-gedeelte.
  *
- * Er is één beheerder en één wachtwoord, dus er komt geen gebruikerstabel aan te
- * pas. De sessie is een ondertekend vervalmoment in een cookie: de Worker hoeft
- * daardoor niets bij te houden, en een cookie die iemand zelf in elkaar zet,
- * klopt niet met de handtekening.
+ * Er is één beheerder met één gebruikersnaam en wachtwoord, dus er komt geen
+ * gebruikerstabel aan te pas. De sessie is een ondertekend vervalmoment in een
+ * cookie: de Worker hoeft daardoor niets bij te houden, en een cookie die iemand
+ * zelf in elkaar zet, klopt niet met de handtekening.
  */
 
-const COOKIE_NAAM = "tt_admin";
+/*
+ * Het `__Host-`-voorvoegsel is geen naamgevingskwestie maar een instructie aan de
+ * browser: een cookie met deze naam mag alleen gezet worden vanaf een veilige
+ * verbinding, zonder `Domain`, met `Path=/`. Daarmee kan een ander subdomein er
+ * geen eigen versie van neerzetten die `leesCookie` als eerste tegenkomt — dat
+ * zou geen sessie vervalsen (de handtekening houdt stand) maar wel een 401
+ * opleveren waar je niet uitkomt.
+ */
+const COOKIE_NAAM = "__Host-tt_admin";
 
 /** Acht uur: lang genoeg voor een werkdag, kort genoeg om niet te blijven staan. */
 const SESSIE_DUUR_MS = 8 * 60 * 60 * 1000;
+
+/**
+ * Scheidingsteken tussen gebruikersnaam en wachtwoord in de vingerafdruk.
+ * Opgebouwd met een charcode in plaats van als letterlijk teken: een nulbyte is
+ * onzichtbaar in een editor, en een onzichtbaar teken dat iemand per ongeluk
+ * wist, verandert stilzwijgend elke handtekening.
+ */
+const NULBYTE = String.fromCharCode(0);
 
 const encoder = new TextEncoder();
 
@@ -85,10 +101,38 @@ function leesCookie(request: Request, naam: string): string | null {
  */
 const COOKIE_OPTIES = "HttpOnly; Secure; SameSite=Strict; Path=/";
 
+/** Een gebruikersnaam is hoofdletterongevoelig; niemand onthoudt hoe hij hem typte. */
+export function normaliseerGebruiker(waarde: string): string {
+  return waarde.trim().toLowerCase();
+}
+
+/**
+ * Vingerafdruk van de huidige inloggegevens, die meegetekend wordt in de sessie.
+ *
+ * Hierdoor maakt het wijzigen van de gebruikersnaam of het wachtwoord elke
+ * bestaande cookie in één klap ongeldig. Zonder dit blijft een gestolen cookie
+ * de volle acht uur werken, óók nadat je het wachtwoord hebt vervangen ómdat het
+ * gelekt was — en dan is er geen enkele manier om iemand eruit te zetten.
+ *
+ * De nulbyte ertussen kan in geen van beide waarden voorkomen, dus ("ab", "c")
+ * levert nooit dezelfde afdruk op als ("a", "bc").
+ */
+export async function inlogVingerafdruk(
+  gebruiker: string,
+  wachtwoord: string,
+): Promise<string> {
+  return base64url(
+    await sha256(`${normaliseerGebruiker(gebruiker)}${NULBYTE}${wachtwoord}`),
+  );
+}
+
 /** Waarde voor de `Set-Cookie`-kop na een geslaagde login. */
-export async function maakSessieCookie(secret: string): Promise<string> {
+export async function maakSessieCookie(
+  secret: string,
+  vingerafdruk: string,
+): Promise<string> {
   const vervalt = String(Date.now() + SESSIE_DUUR_MS);
-  const handtekening = await onderteken(secret, vervalt);
+  const handtekening = await onderteken(secret, `${vervalt}|${vingerafdruk}`);
   const maxAge = Math.floor(SESSIE_DUUR_MS / 1000);
 
   return `${COOKIE_NAAM}=${vervalt}.${handtekening}; ${COOKIE_OPTIES}; Max-Age=${maxAge}`;
@@ -99,10 +143,14 @@ export function wisSessieCookie(): string {
   return `${COOKIE_NAAM}=; ${COOKIE_OPTIES}; Max-Age=0`;
 }
 
-/** Controleert de handtekening én het vervalmoment van de sessiecookie. */
+/**
+ * Controleert de handtekening, het vervalmoment én of de sessie nog bij de
+ * huidige inloggegevens hoort.
+ */
 export async function heeftGeldigeSessie(
   request: Request,
   secret: string,
+  vingerafdruk: string,
 ): Promise<boolean> {
   const cookie = leesCookie(request, COOKIE_NAAM);
   if (!cookie) return false;
@@ -117,15 +165,8 @@ export async function heeftGeldigeSessie(
   const verlooptOp = Number(vervalt);
   if (!Number.isSafeInteger(verlooptOp) || verlooptOp <= Date.now()) return false;
 
-  return gelijkInConstanteTijd(handtekening, await onderteken(secret, vervalt));
-}
-
-/**
- * Onomkeerbare vingerafdruk van een IP-adres. Met dezelfde `salt` levert
- * hetzelfde adres altijd dezelfde hash op — genoeg om te zien dat twintig
- * inschrijvingen van één plek komen — maar het adres zelf is er niet uit terug
- * te halen. Zonder de salt zou een lijst van alle IPv4-adressen dat wel kunnen.
- */
-export async function hashIp(ip: string, salt: string): Promise<string> {
-  return base64url(await sha256(`${ip}${salt}`));
+  return gelijkInConstanteTijd(
+    handtekening,
+    await onderteken(secret, `${vervalt}|${vingerafdruk}`),
+  );
 }

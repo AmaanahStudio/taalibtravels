@@ -14,9 +14,10 @@ import { API, type Deelnemer, type DeelnemersAntwoord } from "../src/lib/api";
 import { valideerLead } from "../src/lib/leads";
 import {
   gelijkInConstanteTijd,
-  hashIp,
   heeftGeldigeSessie,
+  inlogVingerafdruk,
   maakSessieCookie,
+  normaliseerGebruiker,
   wisSessieCookie,
 } from "./auth";
 import { bouwCsv } from "./csv";
@@ -26,6 +27,9 @@ const OVERZICHT_LIMIET = 5000;
 
 /** Een te kort adminwachtwoord is online te raden; hieronder weigert de Worker. */
 const MINIMALE_WACHTWOORDLENGTE = 16;
+
+/** De gebruikersnaam is geen geheim; hij moet alleen niet leeg of triviaal zijn. */
+const MINIMALE_GEBRUIKERSLENGTE = 3;
 
 const TURNSTILE_URL =
   "https://challenges.cloudflare.com/turnstile/v0/siteverify";
@@ -97,7 +101,13 @@ async function routeer(
   if (!beheerIsIngesteld(env)) return beheerNietIngesteld();
 
   // Eén poort voor alles wat hierna komt: geen geldige sessie, geen data.
-  if (!(await heeftGeldigeSessie(request, env.ADMIN_SESSIE_SECRET))) {
+  const sessieGeldig = await heeftGeldigeSessie(
+    request,
+    env.ADMIN_SESSIE_SECRET,
+    await inlogVingerafdruk(env.ADMIN_GEBRUIKER, env.ADMIN_WACHTWOORD),
+  );
+
+  if (!sessieGeldig) {
     return json({ ok: false, melding: "Niet ingelogd." }, 401);
   }
 
@@ -126,7 +136,7 @@ async function inschrijven(
 
   const ip = clientIp(request);
 
-  if (!(await binnenLimiet(env.SIGNUP_LIMIT, ip))) {
+  if (!(await binnenLimiet(env.SIGNUP_LIMIT, "SIGNUP_LIMIT", ip))) {
     return json(
       { ok: false, melding: "Te veel pogingen. Wacht even en probeer opnieuw." },
       429,
@@ -143,6 +153,13 @@ async function inschrijven(
    * script aan.
    */
   if (typeof body.website === "string" && body.website.length > 0) {
+    /*
+     * Wel loggen. Tegen een bot werkt dit precies zoals bedoeld, maar vult een
+     * wachtwoordmanager of autofill dat verborgen veld in, dan verliest een échte
+     * deelnemer zijn inschrijving terwijl hij "Je doet mee!" ziet staan. Zonder
+     * deze regel merkt niemand dat ooit.
+     */
+    console.warn("Honeypot gevuld; inzending genegeerd en niet opgeslagen.");
     return json({ ok: true }, 201);
   }
 
@@ -172,10 +189,17 @@ async function inschrijven(
 
   const { lead } = resultaat;
 
+  /*
+   * De vinkjes worden gebonden en niet als constante `1, 1` meegegeven. Vandaag
+   * levert dat hetzelfde op — `valideerLead` keurt af zonder beide vinkjes — maar
+   * een kolom die het bewijs van toestemming hoort te zijn, mag geen vaste waarde
+   * zijn. Wordt een vinkje ooit optioneel, dan staat er anders stilzwijgend "ja"
+   * bij iemand die nee zei.
+   */
   const uitkomst = await env.DB.prepare(
     `INSERT INTO deelnemers
-       (voornaam, achternaam, email, telefoon, bron, voorwaarden, consent, aangemaakt_op, ip_hash)
-     VALUES (?, ?, ?, ?, 'giveaway', 1, 1, ?, ?)
+       (voornaam, achternaam, email, telefoon, bron, voorwaarden, consent, aangemaakt_op)
+     VALUES (?, ?, ?, ?, 'giveaway', ?, ?, ?)
      ON CONFLICT (email) DO NOTHING`,
   )
     .bind(
@@ -183,8 +207,9 @@ async function inschrijven(
       lead.achternaam,
       lead.email,
       lead.telefoon,
+      lead.voorwaarden ? 1 : 0,
+      lead.consent ? 1 : 0,
       new Date().toISOString(),
-      env.IP_SALT ? await hashIp(ip, env.IP_SALT) : null,
     )
     .run();
 
@@ -218,7 +243,7 @@ async function login(
 
   if (!beheerIsIngesteld(env)) return beheerNietIngesteld();
 
-  if (!(await binnenLimiet(env.LOGIN_LIMIT, clientIp(request)))) {
+  if (!(await binnenLimiet(env.LOGIN_LIMIT, "LOGIN_LIMIT", clientIp(request)))) {
     return json(
       { ok: false, melding: "Te veel pogingen. Wacht een minuut." },
       429,
@@ -226,13 +251,38 @@ async function login(
   }
 
   const body = await leesJson(request);
-  const ingevuld = typeof body?.wachtwoord === "string" ? body.wachtwoord : "";
+  const gebruiker = typeof body?.gebruiker === "string" ? body.gebruiker : "";
+  const wachtwoord = typeof body?.wachtwoord === "string" ? body.wachtwoord : "";
 
-  if (!(await gelijkInConstanteTijd(ingevuld, env.ADMIN_WACHTWOORD))) {
-    return json({ ok: false, melding: "Onjuist wachtwoord." }, 401);
+  /*
+   * Beide vergelijkingen draaien altijd, ook als de eerste al niet klopt. Zou de
+   * controle stoppen zodra de gebruikersnaam fout is, dan verraadt de responstijd
+   * welk van de twee velden goed was — precies wat `gelijkInConstanteTijd` moet
+   * voorkomen. `Promise.all` rekent ze allebei uit vóór de `&&`.
+   */
+  const [gebruikerKlopt, wachtwoordKlopt] = await Promise.all([
+    gelijkInConstanteTijd(
+      normaliseerGebruiker(gebruiker),
+      normaliseerGebruiker(env.ADMIN_GEBRUIKER),
+    ),
+    gelijkInConstanteTijd(wachtwoord, env.ADMIN_WACHTWOORD),
+  ]);
+
+  if (!(gebruikerKlopt && wachtwoordKlopt)) {
+    // Eén melding voor beide fouten: zou hier staan wélk veld mis was, dan kan
+    // een aanvaller eerst de gebruikersnaam uitproberen en is de tweede helft
+    // gratis.
+    return json({ ok: false, melding: "Onjuiste inloggegevens." }, 401);
   }
 
-  return json({ ok: true }, 200, await maakSessieCookie(env.ADMIN_SESSIE_SECRET));
+  return json(
+    { ok: true },
+    200,
+    await maakSessieCookie(
+      env.ADMIN_SESSIE_SECRET,
+      await inlogVingerafdruk(env.ADMIN_GEBRUIKER, env.ADMIN_WACHTWOORD),
+    ),
+  );
 }
 
 async function lijst(env: Env): Promise<Response> {
@@ -352,6 +402,10 @@ function naarDeelnemer(rij: DeelnemerRij): Deelnemer {
  */
 function beheerIsIngesteld(env: Env): boolean {
   return (
+    // Een gebruikersnaam hoeft niet lang te zijn — die is toch geen geheim —
+    // maar leeg mag hij niet zijn, anders logt een leeg veld je zo naar binnen.
+    normaliseerGebruiker(env.ADMIN_GEBRUIKER ?? "").length >=
+      MINIMALE_GEBRUIKERSLENGTE &&
     (env.ADMIN_WACHTWOORD ?? "").length >= MINIMALE_WACHTWOORDLENGTE &&
     (env.ADMIN_SESSIE_SECRET ?? "").length >= MINIMALE_WACHTWOORDLENGTE
   );
@@ -359,8 +413,9 @@ function beheerIsIngesteld(env: Env): boolean {
 
 function beheerNietIngesteld(): Response {
   console.error(
-    "ADMIN_WACHTWOORD of ADMIN_SESSIE_SECRET ontbreekt of is korter dan " +
-      `${MINIMALE_WACHTWOORDLENGTE} tekens. Zet ze met \`wrangler secret put\`.`,
+    "ADMIN_GEBRUIKER, ADMIN_WACHTWOORD of ADMIN_SESSIE_SECRET ontbreekt of is te " +
+      `kort (wachtwoord en sessiesleutel minstens ${MINIMALE_WACHTWOORDLENGTE} ` +
+      "tekens). Zet ze met `wrangler secret put`.",
   );
   return json({ ok: false, melding: "Beheer is nog niet ingesteld." }, 503);
 }
@@ -401,15 +456,27 @@ function clientIp(request: Request): string {
 }
 
 /**
- * De rate-limit-binding bestaat niet in elke lokale opstelling. Ontbreekt hij,
- * dan laten we door: lokaal ontwikkelen mag niet stukgaan op een limiet, en in
- * productie staat de binding in wrangler.jsonc.
+ * Ontbreekt de rate-limit-binding, dan laten we door — hard falen zou je bij een
+ * configuratiefout buiten je eigen admin sluiten, en dat is een erger middel dan
+ * de kwaal.
+ *
+ * Maar niet stilzwijgend: raakt de `ratelimits`-regel in wrangler.jsonc ooit
+ * hernoemd of kwijt, dan verdwijnt de bescherming tegen het uitproberen van
+ * wachtwoorden zonder dat iets dat verraadt. Deze logregel is het verschil
+ * tussen "we zien het in `wrangler tail`" en "we komen er nooit achter".
  */
 async function binnenLimiet(
   limiet: RateLimit | undefined,
+  naam: string,
   sleutel: string,
 ): Promise<boolean> {
-  if (!limiet) return true;
+  if (!limiet) {
+    console.error(
+      `Rate-limit-binding ${naam} ontbreekt; dit verzoek is ongelimiteerd doorgelaten. Controleer "ratelimits" in wrangler.jsonc.`,
+    );
+    return true;
+  }
+
   const { success } = await limiet.limit({ key: sleutel });
   return success;
 }

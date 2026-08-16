@@ -163,9 +163,10 @@ bekijkt ze op `/admin`; daartussen zit `worker/` met een D1-tabel `deelnemers`.
 | Bestand | Doet |
 | ------- | ---- |
 | `worker/index.ts` | Router en handlers voor `/api/*` |
-| `worker/auth.ts` | Sessiecookie (HMAC), wachtwoordvergelijking in constante tijd |
+| `worker/auth.ts` | Sessiecookie (HMAC), inlogvergelijking in constante tijd |
 | `worker/csv.ts` | CSV-export |
 | `worker/schema.sql` | De tabel; opnieuw draaien mag (`IF NOT EXISTS`) |
+| `worker/migraties/` | Genummerde wijzigingen op een database die al bestaat |
 | `src/lib/leads.ts` | Validatieregels, **gedeeld** met het formulier |
 | `src/lib/api.ts` | API-paden en antwoordtypes, idem |
 
@@ -193,6 +194,21 @@ Wat je moet weten voordat je hier iets wijzigt:
 - Een dubbele inschrijving wordt afgevangen met `ON CONFLICT (email) DO NOTHING` plus
   `meta.changes === 0`, niet door de tekst van een D1-foutmelding te lezen.
 - Een leeg telefoonveld gaat als `NULL` de database in, nooit als lege string.
+- **Inloggen vergelijkt gebruikersnaam én wachtwoord, altijd allebei.** Ze gaan via
+  `Promise.all` zodat er geen vroege exit is: stoppen bij de eerste mismatch verraadt via
+  de responstijd welk veld goed was. Eén melding voor beide fouten, om dezelfde reden.
+- De sessiecookie tekent over vervalmoment **plus** een vingerafdruk van de huidige
+  inloggegevens (`inlogVingerafdruk`). Daardoor logt het wijzigen van gebruikersnaam of
+  wachtwoord iedereen uit. Verwijder die binding niet — dan blijft een gestolen cookie
+  acht uur geldig, óók nadat je het wachtwoord juist vanwege een lek hebt vervangen.
+- De cookie heet `__Host-tt_admin`. Dat voorvoegsel is functioneel: het verbiedt een
+  subdomein een eigen cookie met die naam te zetten. Hernoemen breekt die bescherming.
+- **Er wordt geen IP-adres bewaard**, ook niet gehasht — zie `worker/migraties/001`.
+  Voeg dat niet terug toe zonder een echte reden: het is een persoonsgegeven, en een
+  SHA-256 over de IPv4-ruimte is triviaal terug te rekenen.
+- Security headers (waaronder de CSP) staan in `public/_headers`. Dat is de enige plek:
+  bij `output: "export"` draait `headers()` uit `next.config.ts` nooit. Laadt er ooit een
+  script van een nieuw domein, dan moet dat domein daar in de CSP bij.
 
 ## Conventies
 

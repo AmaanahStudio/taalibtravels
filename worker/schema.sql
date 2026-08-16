@@ -23,11 +23,13 @@ CREATE TABLE IF NOT EXISTS deelnemers (
   -- dat je toestemming hébt, moet je achteraf kunnen aantonen.
   voorwaarden    INTEGER NOT NULL,
   consent        INTEGER NOT NULL,
-  aangemaakt_op  TEXT NOT NULL,
-  -- SHA-256(ip + IP_SALT). Genoeg om misbruik te herkennen, zonder een ruw
-  -- IP-adres te bewaren dat je niet nodig hebt.
-  ip_hash        TEXT
+  aangemaakt_op  TEXT NOT NULL
 );
+
+-- Hier stond ooit een `ip_hash`-kolom. Die is verwijderd (zie migraties/001):
+-- hij werd nergens getoond, hij is een persoonsgegeven, en een SHA-256 over de
+-- 4 miljard IPv4-adressen is met de salt in seconden terug te rekenen. Gegevens
+-- die je niet bewaart, kunnen niet lekken.
 
 -- Blokkeert dubbele deelname aan de giveaway. De Worker gebruikt deze index ook
 -- als voorwaarde in ON CONFLICT, dus hij is functioneel en niet enkel hygiëne.
