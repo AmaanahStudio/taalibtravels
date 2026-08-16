@@ -456,6 +456,31 @@ async function turnstileGoedgekeurd(
     body: formulier,
   });
 
-  const uitslag = (await antwoord.json()) as { success?: boolean };
+  const uitslag = (await antwoord.json()) as {
+    success?: boolean;
+    hostname?: string;
+    "error-codes"?: string[];
+  };
+
+  /*
+   * Waaróm een token afgewezen wordt, is van buitenaf niet te zien: de bezoeker
+   * krijgt bewust één algemene melding. Zonder deze regel is een verkeerd
+   * ingesteld secret niet te onderscheiden van een verlopen token, en zoek je
+   * je blind. `invalid-input-secret` betekent dat TURNSTILE_SECRET niet klopt,
+   * `timeout-or-duplicate` dat het token te oud is of al gebruikt.
+   *
+   * De foutcodes bevatten geen geheimen; ze komen alleen in de Worker-logs
+   * (`wrangler tail`), niet in het antwoord aan de bezoeker.
+   */
+  if (uitslag.success !== true) {
+    console.error(
+      "Turnstile weigerde het token:",
+      JSON.stringify({
+        codes: uitslag["error-codes"] ?? [],
+        hostname: uitslag.hostname ?? null,
+      }),
+    );
+  }
+
   return uitslag.success === true;
 }
