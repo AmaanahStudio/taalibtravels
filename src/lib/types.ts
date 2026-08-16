@@ -122,7 +122,57 @@ export interface FaqItem {
   answer: string;
 }
 
+/**
+ * De copy van de giveaway-pagina. Alles staat als tekst in `giveaway.json`, ook
+ * de labels van de twee vinkjes — dan hoeft een wijziging aan de actie geen
+ * enkel component te raken.
+ */
+export interface GiveawayContent {
+  eyebrow: string;
+  title: string;
+  intro: string;
+  /** Wat er te winnen valt, in één zin. */
+  prijs: string;
+  /** ISO-8601; de dag waarop deelnemen niet meer kan. */
+  einddatum: string;
+  /**
+   * De deelnamevoorwaarden zelf staan niet op de site — die communiceer je via
+   * Instagram. Het vinkje hieronder laat de deelnemer alleen bevestigen dat hij
+   * eraan voldaan heeft.
+   */
+  vinkjes: {
+    voorwaarden: string;
+    consent: string;
+  };
+  /** Wat er in beeld komt nadat de inschrijving gelukt is. */
+  bevestiging: {
+    title: string;
+    tekst: string;
+  };
+  /**
+   * Publieke sleutel van de Turnstile-widget — mag in git, in tegenstelling tot
+   * de bijbehorende secret key, die als Worker-secret staat.
+   */
+  turnstileSiteKey: string;
+}
+
+export interface PrivacySectie {
+  kop: string;
+  /** Eén string per paragraaf. */
+  tekst: string[];
+}
+
+export interface PrivacyContent {
+  title: string;
+  /** ISO-8601: wanneer de verklaring voor het laatst is bijgewerkt. */
+  bijgewerkt: string;
+  intro: string;
+  secties: PrivacySectie[];
+}
+
 /*
- * De site heeft geen formulieren: reserveren en vragen stellen gaat volledig
- * via WhatsApp. Er zijn dus ook geen types voor ingevulde velden.
+ * Reserveren en vragen stellen gaat nog altijd volledig via WhatsApp. Het enige
+ * formulier op de site is de giveaway-inschrijving; de vorm van die velden staat
+ * in `lib/leads.ts`, want die regels worden gedeeld met de Worker en mogen dus
+ * niets uit dit bestand importeren.
  */

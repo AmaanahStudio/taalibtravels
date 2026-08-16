@@ -8,7 +8,10 @@ export const dynamic = "force-static";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/" },
+    // /admin is het beheeroverzicht en /api levert alleen JSON: allebei zinloos
+    // in een zoekresultaat. De echte afscherming is de sessiecontrole in de
+    // Worker — dit houdt ze enkel uit de index.
+    rules: { userAgent: "*", allow: "/", disallow: ["/admin", "/api/"] },
     sitemap: `${SITE.url}/sitemap.xml`,
   };
 }

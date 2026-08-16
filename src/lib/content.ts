@@ -1,14 +1,18 @@
 import faqJson from "@/data/faq.json";
 import galleryJson from "@/data/gallery.json";
+import giveawayJson from "@/data/giveaway.json";
 import imagesJson from "@/data/images.json";
 import inclusionsJson from "@/data/inclusions.json";
 import navigationJson from "@/data/navigation.json";
+import privacyJson from "@/data/privacy.json";
 import siteJson from "@/data/site.json";
 import { TRIP_FILES } from "@/data/trips";
 import type {
   FaqItem,
+  GiveawayContent,
   ImageAsset,
   NavLink,
+  PrivacyContent,
   SiteConfig,
   Trip,
   TripInclusion,
@@ -56,6 +60,15 @@ const GALLERY_SIZE = 6;
 export const SITE = siteJson as SiteConfig;
 export const NAV_LINKS = navigationJson as NavLink[];
 export const FAQ = faqJson as FaqItem[];
+export const GIVEAWAY = giveawayJson as GiveawayContent;
+export const PRIVACY = privacyJson as PrivacyContent;
+
+/**
+ * Turnstile's publieke testsleutel: die laat élke inzending door, ook die van
+ * bots. Handig lokaal, rampzalig in productie — vandaar dat de giveaway-pagina
+ * zichtbaar waarschuwt zolang deze waarde in `giveaway.json` staat.
+ */
+export const TURNSTILE_TESTSLEUTEL = "1x00000000000000000000AA";
 
 const IMAGES = imagesJson as RawImages;
 

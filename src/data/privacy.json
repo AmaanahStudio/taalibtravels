@@ -1,0 +1,41 @@
+{
+  "title": "Privacyverklaring",
+  "bijgewerkt": "2026-08-16",
+  "intro": "Deze pagina legt uit welke gegevens TaalibTravels van je bijhoudt wanneer je je inschrijft voor de giveaway, waarom we dat doen, en hoe je ze weer laat verwijderen.",
+  "secties": [
+    {
+      "kop": "Wat we bewaren",
+      "tekst": [
+        "Wanneer je het inschrijfformulier invult, bewaren we je voornaam, achternaam en e-mailadres. Je telefoonnummer bewaren we alleen als je het zelf invult — dat veld is optioneel.",
+        "Daarnaast leggen we vast wanneer je je hebt ingeschreven, en dat je de twee vinkjes hebt aangezet. Van je IP-adres bewaren we enkel een onomkeerbare versleuteling, zodat we misbruik van het formulier kunnen herkennen zonder het adres zelf op te slaan."
+      ]
+    },
+    {
+      "kop": "Waarom we het bewaren",
+      "tekst": [
+        "Om je deelname aan de giveaway te registreren en de winnaar te kunnen contacteren.",
+        "Om je af en toe te mailen over onze Umrah-reizen en acties. Daar geef je bij het inschrijven uitdrukkelijk toestemming voor met een apart vinkje; zonder dat vinkje kan je niet deelnemen aan de giveaway."
+      ]
+    },
+    {
+      "kop": "Hoe lang",
+      "tekst": [
+        "We bewaren je gegevens tot 24 maanden na je laatste contact met ons. Schrijf je je eerder uit, dan verwijderen we ze meteen daarna."
+      ]
+    },
+    {
+      "kop": "Met wie we ze delen",
+      "tekst": [
+        "Met niemand. We verkopen je gegevens niet en geven ze niet door aan andere bedrijven voor hun marketing.",
+        "De gegevens staan opgeslagen bij Cloudflare, die de website en de database voor ons draait."
+      ]
+    },
+    {
+      "kop": "Je rechten",
+      "tekst": [
+        "Je mag altijd opvragen welke gegevens we van je hebben, ze laten corrigeren, of ze volledig laten verwijderen. Eén mailtje volstaat, en we regelen het binnen de dertig dagen.",
+        "Uitschrijven voor de mails kan met één klik onderaan elke mail die je van ons krijgt."
+      ]
+    }
+  ]
+}

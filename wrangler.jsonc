@@ -1,23 +1,66 @@
 {
-  // Assets-only Worker: er is geen `main`, want de site is een statische export
-  // (`output: "export"`). Cloudflare serveert `out/` dan rechtstreeks van het
-  // netwerk, zonder dat er Worker-code per request draait.
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "taalibtravels",
-  "compatibility_date": "2026-08-12",
-  // Zonder deze twee regels zet `wrangler deploy` de workers.dev-URL bij elke
-  // deploy weer aan. De site zou dan op twee adressen te vinden zijn, wat de
-  // canonical uit site.json ondermijnt.
-  "workers_dev": false,
-  "preview_urls": false,
-  "assets": {
-    "directory": "./out",
-    // Next.js schrijft de not-found-pagina naar 404.html; zonder deze regel
-    // krijgt een onbekende URL een lege Cloudflare-fout in plaats van onze
-    // eigen 404.
-    "not_found_handling": "404-page"
-  },
-  "observability": {
-    "enabled": true
-  }
+	// De site is een statische export (`output: "export"`); Cloudflare serveert
+	// `out/` rechtstreeks van het netwerk. Sinds het inschrijfformulier is er ook
+	// Worker-code, maar die draait uitsluitend op /api/* — zie `run_worker_first`.
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "taalibtravels",
+	"main": "./worker/index.ts",
+	// Moet een datum zijn die de geïnstalleerde wrangler ook aankan: de
+	// workerd-binary van 4.121.0 gaat tot 2026-08-11. Zolang er geen `main` was,
+	// startte er lokaal geen runtime en viel een te hoge datum niet op.
+	// Verhoog deze pas samen met wrangler zelf.
+	"compatibility_date": "2026-08-11",
+	// Zonder deze twee regels zet `wrangler deploy` de workers.dev-URL bij elke
+	// deploy weer aan. De site zou dan op twee adressen te vinden zijn, wat de
+	// canonical uit site.json ondermijnt.
+	"workers_dev": false,
+	"preview_urls": false,
+	"assets": {
+		"directory": "./out",
+		// Waarmee de Worker een statisch bestand kan opvragen. Nodig als vangnet in
+		// index.ts voor alles wat toch buiten /api/ binnenkomt.
+		"binding": "ASSETS",
+		// Next.js schrijft de not-found-pagina naar 404.html; zonder deze regel
+		// krijgt een onbekende URL een lege Cloudflare-fout in plaats van onze
+		// eigen 404.
+		"not_found_handling": "404-page",
+		// /api/... bestaat niet als bestand in out/. Zonder deze regel wint
+		// `not_found_handling` en krijgt het formulier de 404-pagina terug in
+		// plaats van de Worker.
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	// Eén binding per database. `DB` is de naam waarmee worker/index.ts hem
+	// aanspreekt (`env.DB`); hernoem die niet zonder de code mee te nemen.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "taalibtravels-leads",
+			"database_id": "694508d6-d030-40ec-959f-9c0d933eb482"
+		}
+	],
+	// Per IP-adres. Turnstile en de unieke index op e-mail zijn de lagen erboven;
+	// dit vangt af dat iemand het formulier of het inlogscherm plat gooit.
+	"ratelimits": [
+		{
+			"name": "LOGIN_LIMIT",
+			"namespace_id": "1001",
+			"simple": {
+				"limit": 5,
+				"period": 60
+			}
+		},
+		{
+			"name": "SIGNUP_LIMIT",
+			"namespace_id": "1002",
+			"simple": {
+				"limit": 5,
+				"period": 60
+			}
+		}
+	],
+	"observability": {
+		"enabled": true
+	}
 }

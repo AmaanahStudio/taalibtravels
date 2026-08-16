@@ -1,5 +1,6 @@
 [
   { "href": "/", "label": "Home" },
   { "href": "/reizen", "label": "Reizen" },
+  { "href": "/giveaway", "label": "Giveaway" },
   { "href": "/contact", "label": "Contact" }
 ]

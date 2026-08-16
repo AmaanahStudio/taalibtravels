@@ -86,8 +86,18 @@ export function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col gap-4 border-t border-line pt-8 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {year} {SITE.name}. Alle rechten voorbehouden.
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>
+              © {year} {SITE.name}. Alle rechten voorbehouden.
+            </span>
+            {/* Niet in navigation.json: die lijst voedt ook de hoofdnavigatie,
+                en daar hoort een privacyverklaring niet thuis. */}
+            <Link
+              href="/privacy"
+              className="underline-offset-4 transition-colors hover:text-heading hover:underline"
+            >
+              Privacyverklaring
+            </Link>
           </p>
           <p className="tracking-[0.18em] uppercase">{SITE.tagline}</p>
         </div>

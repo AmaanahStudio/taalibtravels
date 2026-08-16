@@ -12,9 +12,12 @@ Componenten gebruiken uitsluitend semantische kleur-tokens (`bg-page`,
 keer per thema in `src/app/globals.css`; een rebrand of een derde thema vraagt
 dus geen enkele wijziging in een component.
 
-> **Puur frontend.** Geen backend, geen database, geen API-routes. Alle content
-> staat als JSON in `src/data` en wordt bij het bouwen meegebundeld, dus elke
-> pagina is statisch. De site kan als statische export gehost worden.
+> **Statisch, op één uitzondering na.** Alle content staat als JSON in
+> `src/data` en wordt bij het bouwen meegebundeld, dus elke pagina is een
+> statisch bestand — de site draait als export op Cloudflare. De enige
+> servercode is `worker/`, en die draait uitsluitend op `/api/*`: het
+> inschrijfformulier van de giveaway en het admin-overzicht daarachter. Zie
+> [Giveaway en inschrijvingen](#giveaway-en-inschrijvingen).
 
 ## Stack
 
@@ -34,16 +37,24 @@ De site draait dan op http://localhost:3000.
 
 | Script                 | Doet                                                  |
 | ---------------------- | ----------------------------------------------------- |
-| `npm run dev`          | Ontwikkelserver                                       |
+| `npm run dev`          | Ontwikkelserver (zonder `/api` — zie hieronder)       |
 | `npm run build`        | Productiebuild                                        |
+| `npm run preview`      | Build + `wrangler dev`: de enige manier om `/api` lokaal te draaien |
+| `npm run deploy`       | Build + `wrangler deploy`                             |
 | `npm run start`        | Productieserver (na build)                            |
 | `npm run lint`         | ESLint                                                |
-| `npm run typecheck`    | TypeScript zonder output                              |
+| `npm run typecheck`    | TypeScript voor de site én de Worker                  |
 | `npm run typegen`      | Genereert de `PageProps`/`LayoutProps` route-types    |
+| `npm run cf-typegen`   | Genereert `Env` uit de bindings in `wrangler.jsonc`   |
 | `npm run hero-video`   | Bouwt de videocompilatie voor de hero (zie onder)      |
 
-> `npm run typecheck` heeft de gegenereerde route-types nodig. Draai eerst
-> `npm run typegen` (of `npm run dev` / `npm run build`) na een verse clone.
+> `npm run typecheck` heeft twee gegenereerde bestanden nodig. Draai na een
+> verse clone eerst `npm run typegen` (of `dev` / `build`) voor de route-types,
+> en `npm run cf-typegen` voor het `Env`-type van de Worker.
+
+> `npm run dev` draait alleen Next.js en kent `/api` dus niet: het
+> giveaway-formulier geeft daar een netwerkfout. Werk je aan het formulier of
+> aan het admin-overzicht, gebruik dan `npm run preview`.
 
 ## Structuur
 
@@ -55,6 +66,9 @@ src/
 │   ├── reizen/page.tsx         Overzicht van alle reizen
 │   ├── reizen/[slug]/page.tsx  Detailpagina per reis (statisch gegenereerd)
 │   ├── contact/page.tsx        Contactpagina
+│   ├── giveaway/page.tsx       Inschrijfpagina van de giveaway
+│   ├── admin/page.tsx          Beheeroverzicht (leeg omhulsel; data via /api)
+│   ├── privacy/page.tsx        Privacyverklaring
 │   ├── not-found.tsx           404
 │   ├── sitemap.ts / robots.ts  SEO-basics
 │   └── globals.css             Tailwind-thema en design tokens
@@ -63,9 +77,11 @@ src/
 │   ├── layout/                 Navbar, Footer, achtergrondlaag
 │   ├── home/hero.tsx           Hero van de homepage
 │   ├── home/hero-video.tsx     Videocompilatie in de hero (muted, loop)
+│   ├── giveaway/               Inschrijfformulier + Turnstile-hook
+│   ├── admin/                  Inlogscherm en deelnemerstabel
 │   ├── trips/                  TripCard, TripDetail, DateBlock, FeatureList,
 │   │                           PriceBlock, GallerySection
-│   └── ui/                     Button, Badge, Section, ThemeToggle,
+│   └── ui/                     Button, Badge, Section, Field, ThemeToggle,
 │                               WhatsAppButton, WhatsAppCta, iconen
 ├── data/
 │   ├── site.json               Naam, tagline, contactgegevens, socials
@@ -74,16 +90,29 @@ src/
 │   ├── images.json             Elke foto één keer beschreven, per id
 │   ├── gallery.json            Gedeelde fotopool (lijst foto-id's)
 │   ├── faq.json                Veelgestelde vragen
+│   ├── giveaway.json           Copy, einddatum en Turnstile site key
+│   ├── privacy.json            Tekst van de privacyverklaring
 │   └── trips/                  Eén bestand per reis + index.ts (het register)
 ├── lib/
 │   ├── content.ts              Leest src/data in en levert de lees-functies
 │   ├── theme.ts                Themasleutel + init-script (geen "use client")
 │   ├── types.ts                Domeinmodellen
+│   ├── leads.ts                Validatieregels, gedeeld met de Worker
+│   ├── api.ts                  API-paden en antwoordtypes, idem
 │   └── utils.ts                Datum-/prijsformattering, WhatsApp-links
-└── scripts/
-    ├── generate-placeholders.mjs
-    └── build-hero-video.mjs
+├── scripts/
+│   ├── generate-placeholders.mjs
+│   └── build-hero-video.mjs
+└── worker/                     De enige servercode; draait alleen op /api/*
+    ├── index.ts                Router en handlers
+    ├── auth.ts                 Sessiecookie en wachtwoordcontrole
+    ├── csv.ts                  CSV-export
+    └── schema.sql              Tabel `deelnemers` in D1
 ```
+
+> `src/lib/leads.ts` en `src/lib/api.ts` worden door zowel de site als de Worker
+> geïmporteerd. Ze mogen daarom **geen `@/*`-alias gebruiken**: wrangler bundelt
+> met esbuild en past die alias niet toe.
 
 ## Foto's
 
@@ -211,12 +240,80 @@ hoeft aangeraakt te worden om teksten, prijzen of reizen te wijzigen.
 `src/lib/content.ts` is de enige plek die het bestand inleest; `src/lib/types.ts`
 beschrijft de vorm ervan.
 
+## Giveaway en inschrijvingen
+
+Deelnemers aan de giveaway laten hun gegevens achter op `/giveaway`. Dat is het
+enige formulier van de site, en de enige reden dat er servercode bestaat.
+
+```
+Browser  /giveaway  ──POST /api/deelnemers──▶  Worker  ──▶  D1 `deelnemers`
+Browser  /admin     ──GET  /api/admin/…────▶  Worker  ──▶  D1
+                        (HttpOnly sessiecookie)
+```
+
+Velden: **voornaam, achternaam en e-mail zijn verplicht, telefoon is optioneel.**
+Een leeg telefoonveld wordt als `NULL` opgeslagen, nooit als lege string. Verder
+twee verplichte vinkjes — dat de deelnemer aan de voorwaarden voldeed, en
+toestemming voor mails — die allebei als kolom bewaard worden, want toestemming
+moet je achteraf kunnen aantonen.
+
+De deelnamevoorwaarden zélf staan bewust niet op de site: die communiceer je via
+Instagram. Het vinkje laat de deelnemer alleen bevestigen dat hij eraan voldeed.
+Zorg er dan wel voor dat in die Instagram-tekst staat dat meedoen betekent dat je
+onze mails ontvangt — het formulier zegt het bij het vinkje, en de
+[privacyverklaring](src/data/privacy.json) legt het uit, maar wie op Instagram
+begint hoort het daar al te lezen.
+
+Tegen misbruik staan er drie lagen: een Turnstile-captcha, een unieke index op
+`email` (dus één inschrijving per adres), en een verborgen honeypot-veld. Een
+inzending die daarin blijft hangen krijgt gewoon een bevestiging te zien maar
+wordt niet opgeslagen.
+
+### Eenmalig opzetten
+
+```bash
+npx wrangler d1 create taalibtravels-leads       # id in wrangler.jsonc zetten
+npx wrangler d1 execute taalibtravels-leads --remote --file=./worker/schema.sql
+npx wrangler d1 execute taalibtravels-leads --local  --file=./worker/schema.sql
+
+npx wrangler secret put ADMIN_WACHTWOORD         # minimaal 16 tekens
+npx wrangler secret put ADMIN_SESSIE_SECRET      # willekeurig, 32+ tekens
+npx wrangler secret put TURNSTILE_SECRET
+npx wrangler secret put IP_SALT
+```
+
+Lokaal komen diezelfde waarden uit `.dev.vars`; `.dev.vars.example` is het
+sjabloon. Dat bestand staat in `.gitignore` — let op, het valt **niet** onder de
+`.env*`-regel, dus die uitzondering staat er apart in.
+
+Maak in het Cloudflare-dashboard een **Turnstile**-widget aan voor het domein.
+De secret key wordt het Worker-secret hierboven; de site key hoort in
+`giveaway.json` en mag gewoon in git. Zolang daar Cloudflare's testsleutel staat,
+zet `/giveaway` er zichtbaar een waarschuwing bij — die sleutel laat namelijk
+élke bot door.
+
+Ontbreekt `ADMIN_WACHTWOORD` of `ADMIN_SESSIE_SECRET`, of zijn ze te kort, dan
+antwoordt alles onder `/api/admin/` met **503**. Beheer gaat liever helemaal
+dicht dan half open: met een lege sessiesleutel is een cookie te vervalsen.
+
+### Het overzicht gebruiken
+
+`/admin` vraagt om het wachtwoord en toont daarna alle inschrijvingen, met een
+zoekveld, een knop om alle e-mailadressen te kopiëren, een CSV-export en een
+verwijderknop per rij. De pagina zelf is statische HTML zonder gegevens erin —
+alles komt via de API achter de sessiecontrole binnen, want bij een statische
+export staat elk gegenereerd bestand publiek op het netwerk.
+
+De CSV is komma-gescheiden (RFC 4180, met UTF-8 BOM), zodat Mailchimp en Brevo
+hem zonder omwegen inlezen. Een cel die met `=`, `+`, `-` of `@` begint krijgt
+een apostrof mee, anders voert Excel de inhoud uit als formule.
+
 ## Contact en reserveren
 
-De site heeft **geen formulieren**. Reserveren en vragen stellen gaat volledig
-via WhatsApp, met telefoon, e-mail en Instagram als alternatief op de
-contactpagina. Dat past bij een statische site zonder backend: er is niets dat
-een inzending zou kunnen ontvangen, en klanten boeken toch al via hun telefoon.
+Reserveren en vragen stellen gaat volledig via WhatsApp, met telefoon, e-mail en
+Instagram als alternatief op de contactpagina. Klanten boeken toch al via hun
+telefoon, dus daar staat bewust geen formulier tegenover — het enige formulier
+van de site is de giveaway-inschrijving hierboven.
 
 `WhatsAppCta` (`src/components/ui/whatsapp-cta.tsx`) is het grote blok dat
 onderaan elke reispagina en op de contactpagina staat. `WhatsAppButton` is de

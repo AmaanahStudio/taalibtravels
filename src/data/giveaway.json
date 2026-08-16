@@ -1,0 +1,16 @@
+{
+  "eyebrow": "Giveaway",
+  "title": "Doe mee en maak kans",
+  "intro": "Vul hieronder je gegevens in om officieel deel te nemen. Zonder dit formulier telt je deelname niet mee bij de trekking.",
+  "prijs": "2500 euro reistegoed",
+  "einddatum": "2026-09-10",
+  "vinkjes": {
+    "voorwaarden": "Ik heb me aan de voorwaarden van de giveaway gehouden",
+    "consent": "Ja, ik wil mails ontvangen over de reizen en acties van TaalibTravels"
+  },
+  "bevestiging": {
+    "title": "Je doet mee!",
+    "tekst": "We hebben je inschrijving goed ontvangen. De winnaar wordt na de einddatum getrokken en krijgt persoonlijk bericht. Bekijk ondertussen gerust de reizen die er aankomen."
+  },
+  "turnstileSiteKey": "0x4AAAAAAER7QycbeNQFyAAf"
+}

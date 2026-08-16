@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gegenereerd door `npm run cf-typegen`; niet onze code om op te schonen.
+    "worker-configuration.d.ts",
+    // Tijdelijke bundles van `wrangler dev`/`deploy`.
+    ".wrangler/**",
   ]),
 ]);
 

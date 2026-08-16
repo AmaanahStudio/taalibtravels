@@ -8,18 +8,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Command             | Doet                                                    |
 | ------------------- | ------------------------------------------------------- |
-| `npm run dev`       | Dev server op http://localhost:3000                     |
+| `npm run dev`       | Dev server op http://localhost:3000 — **zonder `/api`** |
+| `npm run preview`   | `next build && wrangler dev` — de enige manier om `/api` lokaal te draaien |
 | `npm run build`     | Productiebuild                                          |
+| `npm run deploy`    | `next build && wrangler deploy`                         |
 | `npm run start`     | Productieserver (na build)                              |
 | `npm run lint`      | ESLint                                                  |
-| `npm run typecheck` | `tsc --noEmit`                                          |
+| `npm run typecheck` | `tsc --noEmit` voor de site **en** voor `worker/`        |
 | `npm run typegen`   | Genereert de `PageProps`/`LayoutProps` route-types      |
+| `npm run cf-typegen`| Genereert `Env` uit de bindings in `wrangler.jsonc`     |
 | `npm run images`    | Genereert de WebP-varianten in `public/images/generated` |
 | `npm run hero-video`| Bouwt `public/videos/hero-compilatie.mp4` + poster-frame |
 | `npm run hero-video:web` | Leidt daaruit de WebM en het WebP-poster af        |
 
-`npm run typecheck` faalt op een verse clone tot de route-types bestaan — draai eerst
-`npm run typegen` (of `dev`/`build`).
+`npm run typecheck` faalt op een verse clone tot twee gegenereerde bestanden bestaan —
+draai eerst `npm run typegen` (of `dev`/`build`) én `npm run cf-typegen`.
 
 Er is **geen testrunner en geen testsuite**. `lint` + `typecheck` + een build zijn de
 volledige verificatie; `npm run build` is de scherpste check, omdat de contentvalidatie
@@ -27,8 +30,10 @@ in [content.ts](src/lib/content.ts) pas bij het bundelen draait.
 
 ## Architectuur
 
-Puur frontend: geen backend, geen database, geen API-routes, geen formulieren. Elke
-pagina is statisch. De site kan als statische export gehost worden.
+Elke pagina is statisch (`output: "export"`) en wordt door Cloudflare rechtstreeks van
+het netwerk geserveerd. De **enige** servercode staat in `worker/` en draait uitsluitend
+op `/api/*` — zie [Giveaway](#giveaway-inschrijvingen-worker--d1) onderaan. Raakt een
+wijziging aan de rest van de site, dan is er dus nog steeds geen backend in het spel.
 
 ### Content is data, geen code
 
@@ -45,6 +50,8 @@ kent; [src/lib/types.ts](src/lib/types.ts) beschrijft de vorm ná het uitpakken.
 | `images.json`           | Elke foto één keer: `src`, `alt`, `width`, `height`, per id |
 | `gallery.json`          | Gedeelde fotopool — een lijst foto-id's                   |
 | `faq.json`              | Veelgestelde vragen                                       |
+| `giveaway.json`         | Copy en einddatum van de giveaway + Turnstile site key     |
+| `privacy.json`          | Tekst van de privacyverklaring                            |
 | `trips/<slug>.json`     | Eén bestand per reis                                      |
 | `trips/index.ts`        | Register: welke reisbestanden bestaan                     |
 
@@ -102,9 +109,12 @@ Twee details die niet vanzelf spreken:
 
 ### Server- vs. client-componenten
 
-Alles is een server component, op drie na: `navbar.tsx`, `ui/theme-toggle.tsx` en
-`home/hero-video.tsx`. Houd dat zo — nieuwe interactiviteit hoort in een klein client-blad,
-niet door `"use client"` naar boven te schuiven.
+Alles is een server component, op deze na: `navbar.tsx`, `ui/theme-toggle.tsx`,
+`home/hero-video.tsx`, en de bladeren van het formulier en het beheer —
+`giveaway/giveaway-form.tsx` (+ `use-turnstile.ts`) en `admin/*`. Houd dat zo — nieuwe
+interactiviteit hoort in een klein client-blad, niet door `"use client"` naar boven te
+schuiven. `giveaway/page.tsx` en `admin/page.tsx` zijn dan ook server components die
+enkel het client-blad renderen; daarom kunnen ze nog steeds `metadata` exporteren.
 
 ### Hydration: formatteer datums en prijzen handmatig
 
@@ -116,11 +126,11 @@ byte-voor-byte hetzelfde produceren. Gebruik `formatDateNumeric`, `formatDateLon
 
 ### Conversie loopt volledig via WhatsApp
 
-Geen formulieren, dus ook geen types voor ingevulde velden. `whatsappUrl(message?)` in
-`utils.ts` bouwt een `wa.me`-link met voorgevuld bericht; het nummer staat één keer in
-`site.json` onder `whatsapp`. `WhatsAppCta` is het blok onderaan reis- en
-contactpagina, `WhatsAppButton` de losse knop — het bericht geef je mee op de plek van
-aanroep.
+Reserveren en vragen stellen loopt volledig via WhatsApp; het enige formulier op de site
+is de giveaway-inschrijving. `whatsappUrl(message?)` in `utils.ts` bouwt een `wa.me`-link
+met voorgevuld bericht; het nummer staat één keer in `site.json` onder `whatsapp`.
+`WhatsAppCta` is het blok onderaan reis- en contactpagina, `WhatsAppButton` de losse knop
+— het bericht geef je mee op de plek van aanroep.
 
 ### UI-primitieven
 
@@ -129,6 +139,10 @@ aanroep.
   die in de cascade van een losse `pt-0` wint.
 - `Button` rendert `<button>`, `<Link>` of `<a>` afhankelijk van `href`; externe links
   (`http`, `mailto`, `tel`) omzeilen de router automatisch.
+- `Field` en `Checkbox` in [field.tsx](src/components/ui/field.tsx) zijn de enige
+  formuliervelden. Ze zetten géén eigen focus-ring: die komt uit de globale
+  `:focus-visible`-regel in `globals.css`, en twee ringen over elkaar zien er rommelig
+  uit. Foutkleuren lopen via de tokens `danger` en `danger-soft`.
 - Iconen zijn inline SVG's in [icons.tsx](src/components/ui/icons.tsx). De `IconKey`-union
   in `types.ts` en de `INCLUSION_ICONS`-map moeten synchroon blijven met de `icon`-waarden
   in `inclusions.json`.
@@ -140,6 +154,45 @@ gegenereerde globals — `PageProps<"/reizen/[slug]">` — niet met een handgesc
 interface. `generateStaticParams` in [reizen/[slug]/page.tsx](src/app/reizen/[slug]/page.tsx)
 bouwt elke detailpagina statisch. `next.config.ts` pint de Turbopack-root, omdat er ook
 een `package-lock.json` in de home-directory staat.
+
+### Giveaway-inschrijvingen: Worker + D1
+
+De enige servercode van het project. Deelnemers vullen `/giveaway` in, de beheerder
+bekijkt ze op `/admin`; daartussen zit `worker/` met een D1-tabel `deelnemers`.
+
+| Bestand | Doet |
+| ------- | ---- |
+| `worker/index.ts` | Router en handlers voor `/api/*` |
+| `worker/auth.ts` | Sessiecookie (HMAC), wachtwoordvergelijking in constante tijd |
+| `worker/csv.ts` | CSV-export |
+| `worker/schema.sql` | De tabel; opnieuw draaien mag (`IF NOT EXISTS`) |
+| `src/lib/leads.ts` | Validatieregels, **gedeeld** met het formulier |
+| `src/lib/api.ts` | API-paden en antwoordtypes, idem |
+
+Wat je moet weten voordat je hier iets wijzigt:
+
+- **`leads.ts` en `api.ts` mogen het `@/*`-alias niet gebruiken.** Wrangler bundelt de
+  Worker met esbuild en past de `paths` uit `tsconfig.json` daarbij niet toe; een
+  alias-import breekt de Worker-build. Onderling importeren ze relatief (`./leads`).
+- De browser valideert voor het gemak, **de Worker oordeelt**. Voeg je een veld toe, doe
+  dat dan in `leads.ts` — dan volgen formulier en server vanzelf.
+- `worker/` staat in de `exclude` van de root-`tsconfig.json` en heeft een eigen
+  `worker/tsconfig.json`: die code draait op workerd en heeft geen DOM. `npm run typecheck`
+  draait allebei. Het `Env`-type komt uit `npm run cf-typegen` en is dus gegenereerd —
+  na een wijziging in `wrangler.jsonc` opnieuw draaien.
+- `run_worker_first: ["/api/*"]` in `wrangler.jsonc` is niet optioneel. Zonder die regel
+  wint `not_found_handling: "404-page"` en krijgt het formulier de 404-pagina in plaats
+  van de Worker. `index.ts` valt voor al het overige terug op `env.ASSETS.fetch`.
+- `compatibility_date` moet een datum zijn die de **geïnstalleerde** wrangler aankan,
+  anders start `wrangler dev` niet. Verhoog hem samen met de dependency, niet los.
+- `npm run dev` kent `/api` niet. Werk aan dit deel met `npm run preview`.
+- Het gegenereerde `Env`-type zegt `string` voor elk secret, maar dat is wat de config
+  belóóft — is een secret in productie niet gezet, dan is de waarde `undefined`. Vandaar
+  `beheerIsIngesteld()`: ontbreken de admin-secrets of zijn ze te kort, dan geeft álles
+  onder `/api/admin/` een 503. Met een lege sessiesleutel valt een cookie te vervalsen.
+- Een dubbele inschrijving wordt afgevangen met `ON CONFLICT (email) DO NOTHING` plus
+  `meta.changes === 0`, niet door de tekst van een D1-foutmelding te lezen.
+- Een leeg telefoonveld gaat als `NULL` de database in, nooit als lege string.
 
 ## Conventies
 

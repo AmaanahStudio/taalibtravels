@@ -41,7 +41,14 @@ yarn-error.log*
 
 # cloudflare
 .wrangler/
+# De secrets voor `wrangler dev`. Let op: dit valt NIET onder .env* hierboven —
+# zonder deze regel belandt het adminwachtwoord in git. .dev.vars.example is de
+# lege versie die wel meegaat.
+.dev.vars
+!.dev.vars.example
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# gegenereerd door `npm run cf-typegen` (levert het Env-type uit wrangler.jsonc)
+worker-configuration.d.ts

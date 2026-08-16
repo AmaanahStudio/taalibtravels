@@ -16,3 +16,14 @@
 
 /videos/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Het beheeroverzicht. De HTML bevat geen gegevens — die komen via de API achter
+# een sessiecontrole — maar er is ook geen reden om hem te bewaren of te tonen
+# in een zoekresultaat.
+/admin
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+/admin/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow

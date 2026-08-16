@@ -1,0 +1,21 @@
+{
+  // De Worker draait op workerd, niet in een browser. Hem in hetzelfde
+  // TypeScript-programma als de site stoppen zou `document` en `window`
+  // beschikbaar maken in code die ze niet heeft — vandaar een eigen project.
+  // De root-tsconfig sluit deze map daarom uit.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    // Weggelaten: de plugins en paths van Next. Wrangler bundelt met esbuild en
+    // past de `@/*`-alias niet toe, dus imports naar src/ gaan hier relatief.
+    "plugins": [],
+    "paths": {}
+  },
+  // `worker-configuration.d.ts` komt uit `npm run cf-typegen` en levert het
+  // Env-type met de bindings uit wrangler.jsonc.
+  "include": ["**/*.ts", "../worker-configuration.d.ts"],
+  "exclude": []
+}

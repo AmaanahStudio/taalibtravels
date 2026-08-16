@@ -30,5 +30,8 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  // `worker/` en de gegenereerde Cloudflare-types horen niet in dit programma:
+  // die code draait op workerd en heeft geen DOM. Ze worden apart nagekeken via
+  // worker/tsconfig.json (`npm run typecheck` draait allebei).
+  "exclude": ["node_modules", "worker", "worker-configuration.d.ts"]
 }

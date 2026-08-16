@@ -37,6 +37,10 @@
   --color-accent-strong: #b8862b;
   --color-accent-soft: #f6ecd8; /* accent-getint vlak, bv. badges */
 
+  /* --- Fout: afgekeurd formulierveld en de melding eronder --- */
+  --color-danger: #a8321f;
+  --color-danger-soft: #fbeae6; /* getint vlak achter een foutmelding */
+
   /* --- Primaire knop (keert om per thema) --- */
   --color-btn: #191410;
   --color-on-btn: #faf7f0;
@@ -118,6 +122,10 @@
   --color-accent: #93c9ea;
   --color-accent-strong: #5fabd8;
   --color-accent-soft: #17293a;
+
+  /* Op bijna zwart moet rood juist lichter worden om leesbaar te blijven. */
+  --color-danger: #f2a49a;
+  --color-danger-soft: #2c1512;
 
   --color-btn: #eaf1f7;
   --color-on-btn: #090c11;
