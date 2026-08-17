@@ -57,7 +57,7 @@ export default function GiveawayPage() {
             <h2 className="text-xs font-semibold tracking-[0.24em] text-accent uppercase">
               Te winnen
             </h2>
-            <p className="text-base leading-relaxed text-heading">
+            <p className="text-base font-semibold leading-relaxed text-heading">
               {GIVEAWAY.prijs}
             </p>
           </div>
