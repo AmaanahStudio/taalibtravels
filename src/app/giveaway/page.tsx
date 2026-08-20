@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
+import { Countdown } from "@/components/giveaway/countdown";
 import { GiveawayForm } from "@/components/giveaway/giveaway-form";
 import { Section, SectionHeading } from "@/components/ui/section";
 import { GIVEAWAY, SITE, TURNSTILE_TESTSLEUTEL } from "@/lib/content";
-import { formatDateLong } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Giveaway",
@@ -66,9 +66,7 @@ export default function GiveawayPage() {
             <h2 className="text-xs font-semibold tracking-[0.24em] text-accent uppercase">
               Deelnemen kan tot
             </h2>
-            <p className="text-base font-semibold text-heading">
-              {formatDateLong(GIVEAWAY.einddatum)}
-            </p>
+            <Countdown deadline={GIVEAWAY.einddatum} />
           </div>
         </aside>
 

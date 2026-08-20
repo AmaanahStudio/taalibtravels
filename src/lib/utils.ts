@@ -63,6 +63,30 @@ export function formatDateLong(iso: string) {
   return `${day} ${MONTHS_NL[month]} ${year}`;
 }
 
+/**
+ * "4 september 2026 om 21:00" — voor een moment mét tijd, zoals de deadline van
+ * de giveaway.
+ *
+ * Deze leest de onderdelen uit de tekst zelf in plaats van via een `Date`, want
+ * de andere formatters hierboven rekenen in UTC. Voor "2026-09-04T21:00:00+02:00"
+ * levert dat 19:00 op — het juiste tijdstip, maar niet het uur dat de bezoeker
+ * op zijn eigen klok ziet staan. De offset in de string zegt in welke tijdzone
+ * de geschreven tijd bedoeld is, en dat is precies wat hier getoond moet worden.
+ */
+export function formatDateTimeLong(iso: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso);
+
+  if (!match) {
+    throw new Error(
+      `formatDateTimeLong verwacht een ISO-datum mét tijd (bv. "2026-09-04T21:00:00+02:00"), maar kreeg "${iso}".`,
+    );
+  }
+
+  const [, year, month, day, hour, minute] = match;
+
+  return `${Number(day)} ${MONTHS_NL[Number(month) - 1]} ${year} om ${hour}:${minute}`;
+}
+
 /** Losse onderdelen voor de grote datumweergave in de "Datum"-sectie. */
 export function splitDate(iso: string) {
   const { day, month, year } = parts(iso);

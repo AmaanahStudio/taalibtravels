@@ -133,7 +133,11 @@ export interface GiveawayContent {
   intro: string;
   /** Wat er te winnen valt, in één zin. */
   prijs: string;
-  /** ISO-8601; de dag waarop deelnemen niet meer kan. */
+  /**
+   * ISO-8601 mét tijd en tijdzone-offset, bv. "2026-09-04T21:00:00+02:00". De
+   * aftelklok op de pagina rekent hierop, dus zonder offset telt hij af naar
+   * middernacht UTC in plaats van naar de Belgische klok.
+   */
   einddatum: string;
   /**
    * De deelnamevoorwaarden zelf staan niet op de site — die communiceer je via
