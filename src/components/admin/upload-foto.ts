@@ -100,19 +100,9 @@ export async function maakVarianten(bestand: File): Promise<Varianten> {
 
   let bron: ImageBitmap;
   try {
-    /*
-     * Meteen op het afgetopte formaat decoderen: een foto van 48 MP volledig
-     * uitpakken kost bijna 200 MB, en daarop sluit een telefoon de tab.
-     * `from-image` draait een telefoonfoto volgens zijn EXIF-oriëntatie rechtop.
-     */
-    bron = await createImageBitmap(bestand, {
-      imageOrientation: "from-image",
-      resizeWidth: width,
-      resizeHeight: height,
-      resizeQuality: "high",
-    });
-  } catch {
-    throw new UploadFout(ONLEESBAAR);
+    bron = await decodeerOpMaat(bestand, width, height);
+  } catch (fout) {
+    throw fout instanceof UploadFout ? fout : new UploadFout(ONLEESBAAR);
   }
 
   try {
@@ -150,6 +140,56 @@ export async function maakVarianten(bestand: File): Promise<Varianten> {
   } finally {
     bron.close();
   }
+}
+
+/**
+ * Decodeert de foto rechtop en meteen op `width` × `height` (de afgetopte maat):
+ * een foto van 48 MP volledig uitpakken kost bijna 200 MB, en daarop sluit een
+ * telefoon de tab. `from-image` draait hem volgens zijn EXIF-oriëntatie.
+ *
+ * Browsers zijn het niet eens over de volgorde: de ene draait eerst en
+ * verkleint dan, de andere verkleint de onbewerkte pixels en draait daarna. Bij
+ * een staande telefoonfoto levert dat laatste verwisselde afmetingen op, en
+ * `drawImage` zou het beeld dan uitrekken. Daarom controleren we het resultaat:
+ *  - verwisseld → nog eens, met de resize-maten omgedraaid;
+ *  - de browser negeerde de resize-opties maar de verhouding klopt → prima,
+ *    het canvas schaalt;
+ *  - anders → zonder resize decoderen (meer geheugen, maar alleen in dit
+ *    zeldzame geval) en via canvas schalen.
+ * Een bitmap die we niet teruggeven, wordt altijd gesloten.
+ */
+async function decodeerOpMaat(bestand: File, width: number, height: number): Promise<ImageBitmap> {
+  const opMaat = (w: number, h: number) =>
+    createImageBitmap(bestand, {
+      imageOrientation: "from-image",
+      resizeWidth: w,
+      resizeHeight: h,
+      resizeQuality: "high",
+    });
+  const klopt = (b: ImageBitmap) => Math.abs(b.width - width) <= 1 && Math.abs(b.height - height) <= 1;
+  const zelfdeVerhouding = (b: ImageBitmap) =>
+    Math.abs(b.width / b.height / (width / height) - 1) <= 0.01;
+
+  let bitmap = await opMaat(width, height);
+  if (klopt(bitmap)) return bitmap;
+
+  const verwisseld = Math.abs(bitmap.width - height) <= 1 && Math.abs(bitmap.height - width) <= 1;
+  if (!verwisseld && zelfdeVerhouding(bitmap)) return bitmap;
+  bitmap.close();
+
+  if (verwisseld) {
+    bitmap = await opMaat(height, width);
+    if (klopt(bitmap)) return bitmap;
+    bitmap.close();
+  }
+
+  bitmap = await createImageBitmap(bestand, { imageOrientation: "from-image" });
+  if (zelfdeVerhouding(bitmap)) return bitmap;
+  bitmap.close();
+  // Liever geen foto dan een scheve: die zou op de site zo blijven staan.
+  throw new UploadFout(
+    "Deze browser draait de foto niet goed rechtop. Upload hem vanaf een computer, of sla hem eerst opnieuw op.",
+  );
 }
 
 /**
