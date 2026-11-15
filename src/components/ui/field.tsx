@@ -1,4 +1,9 @@
-import type { InputHTMLAttributes, ReactNode } from "react";
+import type {
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -15,7 +20,10 @@ type InputEigen = Omit<
   "id" | "name" | "className"
 >;
 
-type FieldProps = InputEigen & {
+type FieldProps = InputEigen & VeldBasis;
+
+/** Wat elk veld met een label deelt. */
+type VeldBasis = {
   /** Ook de `name` en het `id` — één naam per veld, geen tweede bron van waarheid. */
   naam: string;
   label: string;
@@ -26,17 +34,18 @@ type FieldProps = InputEigen & {
   className?: string;
 };
 
-/** Eén tekstveld: label, invoer en de foutmelding die erbij hoort. */
-export function Field({
+/**
+ * Label boven, melding onder. Eén omhulsel voor `Field`, `TextArea` en
+ * `Select`, zodat de drie er altijd hetzelfde uitzien.
+ */
+function VeldOmhulsel({
   naam,
   label,
   fout,
   optioneel,
   className,
-  ...props
-}: FieldProps) {
-  const foutId = `${naam}-fout`;
-
+  children,
+}: VeldBasis & { children: ReactNode }) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <label
@@ -51,23 +60,92 @@ export function Field({
         )}
       </label>
 
-      <input
-        id={naam}
-        name={naam}
-        // `aria-invalid` en `aria-describedby` koppelen de melding aan het veld,
-        // zodat een schermlezer hem voorleest zodra de focus er staat.
-        aria-invalid={fout ? true : undefined}
-        aria-describedby={fout ? foutId : undefined}
-        className={cn(VELD_BASIS, fout ? "border-danger" : "border-line")}
-        {...props}
-      />
+      {children}
 
       {fout && (
-        <p id={foutId} className="text-xs leading-relaxed text-danger">
+        <p id={`${naam}-fout`} className="text-xs leading-relaxed text-danger">
           {fout}
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * `aria-invalid` en `aria-describedby` koppelen de melding aan het veld,
+ * zodat een schermlezer hem voorleest zodra de focus er staat.
+ */
+function veldAttributen(naam: string, fout: string | undefined) {
+  return {
+    id: naam,
+    name: naam,
+    "aria-invalid": fout ? true : undefined,
+    "aria-describedby": fout ? `${naam}-fout` : undefined,
+    className: cn(VELD_BASIS, fout ? "border-danger" : "border-line"),
+  } as const;
+}
+
+/** Eén tekstveld: label, invoer en de foutmelding die erbij hoort. */
+export function Field({
+  naam,
+  label,
+  fout,
+  optioneel,
+  className,
+  ...props
+}: FieldProps) {
+  return (
+    <VeldOmhulsel {...{ naam, label, fout, optioneel, className }}>
+      <input {...veldAttributen(naam, fout)} {...props} />
+    </VeldOmhulsel>
+  );
+}
+
+type TextAreaProps = Omit<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "id" | "name" | "className"
+> &
+  VeldBasis;
+
+/** Meerregelig tekstveld, met hetzelfde label en dezelfde melding als `Field`. */
+export function TextArea({
+  naam,
+  label,
+  fout,
+  optioneel,
+  className,
+  rows = 4,
+  ...props
+}: TextAreaProps) {
+  return (
+    <VeldOmhulsel {...{ naam, label, fout, optioneel, className }}>
+      <textarea rows={rows} {...veldAttributen(naam, fout)} {...props} />
+    </VeldOmhulsel>
+  );
+}
+
+type SelectProps = Omit<
+  SelectHTMLAttributes<HTMLSelectElement>,
+  "id" | "name" | "className"
+> &
+  VeldBasis & { children: ReactNode };
+
+/** Keuzelijst; de `<option>`s geef je als children mee. */
+export function Select({
+  naam,
+  label,
+  fout,
+  optioneel,
+  className,
+  children,
+  ...props
+}: SelectProps) {
+  return (
+    <VeldOmhulsel {...{ naam, label, fout, optioneel, className }}>
+      <select {...veldAttributen(naam, fout)} {...props}>
+        {children}
+      </select>
+    </VeldOmhulsel>
   );
 }
 
