@@ -49,6 +49,7 @@ const MAX = {
   prijsNotitie: 100,
   prijs: 100000,
   plekken: 10000,
+  afbeeldingId: 100,
 } as const;
 
 export interface InclusieInvoer {
@@ -112,6 +113,16 @@ export function valideerReis(ruw: unknown): ReisResultaat {
     return t;
   };
 
+  /** Optionele tekst: afwezig (of null) mag, een ander type dan tekst niet. */
+  const optioneleTekst = (pad: string, waarde: unknown): string => {
+    if (waarde === undefined || waarde === null) return "";
+    if (typeof waarde !== "string") {
+      fouten[pad] = "Vul tekst in.";
+      return "";
+    }
+    return waarde.trim();
+  };
+
   const slug = tekst("slug", ruw.slug, "De slug", MAX.slug);
   if (slug && !fouten.slug && !SLUG_PATROON.test(slug)) {
     fouten.slug = "Gebruik alleen kleine letters, cijfers en streepjes (bv. umrah-budget).";
@@ -121,22 +132,22 @@ export function valideerReis(ruw: unknown): ReisResultaat {
   const summary = tekst("summary", ruw.summary, "De samenvatting", MAX.summary);
 
   // Lege alinea's vallen weg, zodat een achtergebleven lege regel geen fout is.
+  // De foutsleutel gebruikt de index in de invoer, want dat is de rij die het formulier toont.
   const description: string[] = [];
   if (Array.isArray(ruw.description)) {
-    for (const alinea of ruw.description) {
+    ruw.description.forEach((alinea: unknown, i) => {
       const t = typeof alinea === "string" ? alinea.trim() : "";
-      if (t) description.push(t);
-    }
+      if (!t) return;
+      if (t.length > MAX.paragraaf) {
+        fouten[`description.${i}`] = `Een alinea mag hoogstens ${MAX.paragraaf} tekens zijn.`;
+      }
+      description.push(t);
+    });
   }
   if (description.length === 0) {
     fouten.description = "Voeg minstens één alinea toe.";
   } else if (description.length > MAX.paragrafen) {
     fouten.description = `Hoogstens ${MAX.paragrafen} alinea's.`;
-  } else {
-    const teLang = description.findIndex((t) => t.length > MAX.paragraaf);
-    if (teLang !== -1) {
-      fouten[`description.${teLang}`] = `Een alinea mag hoogstens ${MAX.paragraaf} tekens zijn.`;
-    }
   }
 
   const departureDate = typeof ruw.departureDate === "string" ? ruw.departureDate.trim() : "";
@@ -158,9 +169,12 @@ export function valideerReis(ruw: unknown): ReisResultaat {
   } else if (!heeftHoogstensTweeDecimalen(amount)) {
     fouten["price.amount"] = "Gebruik hoogstens twee decimalen.";
   }
-  const note = typeof prijs.note === "string" ? prijs.note.trim() : "";
+  const note = optioneleTekst("price.note", prijs.note);
   if (note.length > MAX.prijsNotitie) {
     fouten["price.note"] = `De toelichting mag hoogstens ${MAX.prijsNotitie} tekens zijn.`;
+  }
+  if (prijs.installmentsAvailable !== undefined && typeof prijs.installmentsAvailable !== "boolean") {
+    fouten["price.installmentsAvailable"] = "Kies ja of nee.";
   }
   const installmentsAvailable = prijs.installmentsAvailable === true;
 
@@ -173,7 +187,7 @@ export function valideerReis(ruw: unknown): ReisResultaat {
     ruw.inclusions.forEach((rij: unknown, i) => {
       const r = isObj(rij) ? rij : {};
       const label = tekst(`inclusions.${i}.label`, r.label, "Het label", MAX.inclusieLabel);
-      const toelichting = typeof r.description === "string" ? r.description.trim() : "";
+      const toelichting = optioneleTekst(`inclusions.${i}.description`, r.description);
       if (toelichting.length > MAX.inclusieToelichting) {
         fouten[`inclusions.${i}.description`] =
           `De toelichting mag hoogstens ${MAX.inclusieToelichting} tekens zijn.`;
@@ -186,11 +200,19 @@ export function valideerReis(ruw: unknown): ReisResultaat {
 
   const coverImage = typeof ruw.coverImage === "string" ? ruw.coverImage.trim() : "";
   if (!coverImage) fouten.coverImage = "Kies een omslagfoto.";
+  else if (coverImage.length > MAX.afbeeldingId) fouten.coverImage = "Ongeldige foto.";
 
   let gallery: string[] | null = null;
   if (ruw.gallery !== null && ruw.gallery !== undefined) {
-    const ids: unknown[] = Array.isArray(ruw.gallery) ? ruw.gallery : [];
-    const alleIds = ids.every((id): id is string => typeof id === "string" && id.trim() !== "");
+    const ids: string[] = [];
+    let alleIds = Array.isArray(ruw.gallery);
+    if (Array.isArray(ruw.gallery)) {
+      for (const id of ruw.gallery as unknown[]) {
+        const t = typeof id === "string" ? id.trim() : "";
+        if (!t || t.length > MAX.afbeeldingId) alleIds = false;
+        ids.push(t);
+      }
+    }
     if (!alleIds || ids.length !== GALERIJ_AANTAL) {
       fouten.gallery = `Kies precies ${GALERIJ_AANTAL} foto's.`;
     } else if (new Set(ids).size !== ids.length) {
@@ -252,7 +274,7 @@ export function valideerReis(ruw: unknown): ReisResultaat {
 export function maakSlug(title: string, subtitle: string): string {
   return `${title} ${subtitle}`
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/\p{M}/gu, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
