@@ -11,6 +11,7 @@
 import openNext from "../.open-next/worker.js";
 import { API, MEDIA_PAD, type Deelnemer, type DeelnemersAntwoord } from "../src/lib/api";
 import { routeerAfbeeldingen } from "./afbeeldingen";
+import { metBeveiligingsheaders } from "./beveiligingsheaders";
 import { serveerMedia } from "./media";
 import { valideerLead } from "../src/lib/leads";
 import {
@@ -66,24 +67,33 @@ export default {
       return serveerMedia(request, url, env);
     }
 
-    // Alles buiten /api/ is van Next (OpenNext): pagina's, assets en 404's.
-    if (!url.pathname.startsWith("/api/")) {
-      return openNext.fetch(request, env, ctx);
-    }
+    /*
+     * Alles buiten /api/ is van Next (OpenNext): pagina's en 404's. Statische
+     * bestanden komen hier niet langs — die serveert Cloudflare zelf, met de
+     * headers uit `public/_headers`. Voor wat wél hier langskomt, zet de Worker
+     * dezelfde headers zelf.
+     */
+    const antwoord = url.pathname.startsWith("/api/")
+      ? await apiAntwoord(request, url, env)
+      : await openNext.fetch(request, env, ctx);
 
-    try {
-      return await routeer(request, url, env);
-    } catch (fout) {
-      // De echte fout blijft in de Cloudflare-logs; de bezoeker krijgt hem niet
-      // te zien. Een stacktrace of SQL-melding vertelt een aanvaller te veel.
-      console.error("Onverwachte fout:", fout);
-      return json(
-        { ok: false, melding: "Er ging iets mis. Probeer het later opnieuw." },
-        500,
-      );
-    }
+    return metBeveiligingsheaders(antwoord, url.pathname);
   },
 } satisfies ExportedHandler<Env>;
+
+async function apiAntwoord(request: Request, url: URL, env: Env): Promise<Response> {
+  try {
+    return await routeer(request, url, env);
+  } catch (fout) {
+    // De echte fout blijft in de Cloudflare-logs; de bezoeker krijgt hem niet
+    // te zien. Een stacktrace of SQL-melding vertelt een aanvaller te veel.
+    console.error("Onverwachte fout:", fout);
+    return json(
+      { ok: false, melding: "Er ging iets mis. Probeer het later opnieuw." },
+      500,
+    );
+  }
+}
 
 async function routeer(
   request: Request,

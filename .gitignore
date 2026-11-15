@@ -23,6 +23,9 @@
 # gegenereerde foto-varianten (scripts/build-images.mjs, draait bij elke build)
 /public/images/generated/
 
+# gegenereerd uit worker/beveiligingsheaders.ts (scripts/build-headers.mjs, prebuild)
+/public/_headers
+
 # misc
 .DS_Store
 *.pem

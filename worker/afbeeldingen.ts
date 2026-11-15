@@ -22,8 +22,7 @@ import {
 } from "../src/lib/api";
 import { json, leesJson, methodeNietToegestaan, vanEigenOriginStrikt } from "./http";
 import { GALERIJ_AANTAL } from "../src/lib/reizen";
-// Tijdelijk rechtstreeks uit het script: dezelfde ladder als de build-varianten.
-import { ALL_WIDTHS } from "../scripts/image-sizes.mjs";
+import { ALL_WIDTHS } from "../src/lib/foto-breedtes";
 
 /** Bovengrens op het overzicht, zodat één verzoek nooit de hele tabel trekt. */
 const OVERZICHT_LIMIET = 2000;
