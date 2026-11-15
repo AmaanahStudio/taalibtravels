@@ -61,6 +61,11 @@ function Miniatuur({
   afbeelding: AfbeeldingMetGebruik;
   decoratief?: boolean;
 }) {
+  // De rij staat in D1, maar het bestand in R2 kan ontbreken (mislukte upload,
+  // los verwijderd). Dan liever dezelfde waarschuwing dan een kapot icoontje.
+  const [kapot, setKapot] = useState(false);
+  if (kapot) return <OntbrekendeFoto id={afbeelding.id} />;
+
   return (
     // Gewone <img>: next/image voegt hier niets toe — de bron ís al de kleine
     // variant, en het beheer hoeft geen srcset.
@@ -71,8 +76,17 @@ function Miniatuur({
       width={256}
       height={Math.round((256 * afbeelding.height) / afbeelding.width) || 171}
       loading="lazy"
+      onError={() => setKapot(true)}
       className="aspect-[3/2] h-auto w-full rounded-xl bg-sunken object-cover"
     />
+  );
+}
+
+function OntbrekendeFoto({ id }: { id: string }) {
+  return (
+    <div className="flex aspect-[3/2] items-center justify-center rounded-xl bg-danger-soft px-2 text-center text-xs text-danger">
+      Ontbrekende foto ({id})
+    </div>
   );
 }
 
@@ -165,13 +179,11 @@ export function FotoKiezer({
               >
                 {afbeelding ? (
                   <Miniatuur afbeelding={afbeelding} />
+                ) : ontbreekt ? (
+                  <OntbrekendeFoto id={id} />
                 ) : (
                   <div className="flex aspect-[3/2] items-center justify-center rounded-xl bg-sunken px-2 text-center text-xs text-muted">
-                    {ontbreekt ? (
-                      <span className="text-danger">Ontbrekende foto ({id})</span>
-                    ) : (
-                      "Laden…"
-                    )}
+                    Laden…
                   </div>
                 )}
                 {/* `flex-wrap`: in een tegel van een halve telefoonbreedte past

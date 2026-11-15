@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Select, TextArea } from "@/components/ui/field";
@@ -20,6 +20,7 @@ import {
   type ReisFouten,
 } from "@/lib/reizen";
 import type { IconKey, TripAudience, TripStatus } from "@/lib/types";
+import { formatPrice } from "@/lib/utils";
 
 import { FotoKiezer } from "./foto-kiezer";
 import { verplaats, VolgordeKnoppen } from "./volgorde-knoppen";
@@ -118,14 +119,24 @@ function bedragAlsTekst(bedrag: number): string {
   return String(bedrag).replace(".", ",");
 }
 
+/** Met komma: de komma is het decimaalteken, punten groeperen per drie ("1.499,99"). */
+const BEDRAG_MET_KOMMA = /^(\d+|\d{1,3}(\.\d{3})+),\d+$/;
+/** Zonder komma, punten gevolgd door precies drie cijfers: duizendtallen ("1.500"). */
+const BEDRAG_DUIZENDTALLEN = /^\d{1,3}(\.\d{3})+$/;
+/** Anders hoogstens één punt, als decimaalteken ("1499.99"). */
+const BEDRAG_MET_PUNT = /^\d+(\.\d+)?$/;
+
 /**
- * "1.499,99", "1499,99" en "1499.99" worden allemaal 1499.99. Staat er een
- * komma, dan zijn punten duizendtallen; anders is de punt het decimaalteken.
+ * Leest een bedrag zoals een Belg het typt. "1.500" is dus vijftienhonderd en
+ * niet anderhalf. Alles wat in geen van de drie vormen past (letters, twee
+ * komma's, "1.50.0") geeft `NaN`: liever een melding dan een stil fout bedrag.
  */
 function leesBedrag(tekst: string): number {
-  const t = tekst.trim().replace(/\s|€/g, "");
-  if (!t) return Number.NaN;
-  return Number(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t);
+  const t = tekst.trim().replace(/[\s€]/g, "");
+  if (BEDRAG_MET_KOMMA.test(t)) return Number(t.replace(/\./g, "").replace(",", "."));
+  if (BEDRAG_DUIZENDTALLEN.test(t)) return Number(t.replace(/\./g, ""));
+  if (BEDRAG_MET_PUNT.test(t)) return Number(t);
+  return Number.NaN;
 }
 
 /** Leeg betekent "niet tonen"; al het andere moet een getal zijn. */
@@ -298,12 +309,15 @@ export function ReisFormulier({
   reis,
   onKlaar,
   onUitgelogd,
+  onGewijzigd,
 }: {
   /** Ontbreekt bij een nieuwe reis. */
   reis?: ReisRecord;
   /** Met de opgeslagen reis na opslaan, zonder argument bij annuleren. */
   onKlaar: (opgeslagen?: ReisRecord) => void;
   onUitgelogd: () => void;
+  /** Meldt of er niet-opgeslagen wijzigingen zijn, zodat uitloggen kan waarschuwen. */
+  onGewijzigd?: (gewijzigd: boolean) => void;
 }) {
   const bewerken = reis !== undefined;
   const [concept, setConcept] = useState<Concept>(() => naarConcept(reis));
@@ -328,13 +342,51 @@ export function ReisFormulier({
       : undefined;
 
   const invoer = naarInvoer(concept, slug);
+  const bedrag = invoer.price.amount;
+  const bedragOnleesbaar = concept.prijs.trim() !== "" && Number.isNaN(bedrag);
+
+  /**
+   * Fouten die `valideerReis` niet kan zien, omdat ze in het concept zitten en
+   * niet in de invoer: de afgeleide slug, en een bedrag dat niet te lezen is
+   * (in de invoer is dat al `NaN`, en daarover zegt de validatie alleen
+   * "groter dan nul").
+   */
+  const eigenFouten: ReisFouten = {
+    ...(slugFout ? { slug: slugFout } : {}),
+    ...(bedragOnleesbaar
+      ? {
+          "price.amount":
+            "Dit bedrag is niet te lezen. Schrijf het zoals 1499,99 of 1.500 (punt voor duizendtallen, komma voor centen).",
+        }
+      : {}),
+  };
+
   const controle = poging ? valideerReis(invoer) : null;
   const clientFouten = controle && !controle.ok ? controle.fouten : {};
   const fouten: ReisFouten = {
     ...serverFouten,
     ...clientFouten,
-    ...(slugFout ? { slug: slugFout } : {}),
+    // De slugfout staat er meteen, de bedragfout pas na een poging: tijdens het
+    // typen is "1." nog geen fout.
+    ...(poging ? eigenFouten : slugFout ? { slug: slugFout } : {}),
   };
+
+  // Niet waarschuwen tijdens het opslaan: na succes verdwijnt het formulier toch.
+  const waarschuwBijVerlaten = gewijzigd && !bezig;
+  useEffect(() => {
+    if (!waarschuwBijVerlaten) return;
+    const waarschuw = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Oudere browsers tonen de vraag pas als `returnValue` gezet is.
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", waarschuw);
+    return () => window.removeEventListener("beforeunload", waarschuw);
+  }, [waarschuwBijVerlaten]);
+
+  useEffect(() => {
+    onGewijzigd?.(gewijzigd);
+  }, [gewijzigd, onGewijzigd]);
 
   /**
    * Past het concept aan en wist de serverfouten van de genoemde velden: die
@@ -352,12 +404,16 @@ export function ReisFormulier({
   }
 
   function tekstVeld(pad: TekstSleutel) {
+    // Volgt de slug de titel, dan maakt een andere titel ook een andere slug,
+    // en ging een "al in gebruik" van de server over de oude.
+    const volgtSlug =
+      !bewerken && !concept.slugHandmatig && (pad === "title" || pad === "subtitle");
     return {
       ...veld(pad),
       value: concept[pad],
       onChange: (event: { target: { value: string } }) => {
         const waarde = event.target.value;
-        pas(() => ({ [pad]: waarde }), pad);
+        pas(() => ({ [pad]: waarde }), pad, ...(volgtSlug ? ["slug"] : []));
       },
     };
   }
@@ -370,12 +426,9 @@ export function ReisFormulier({
     setMelding(null);
 
     const resultaat = valideerReis(invoer);
-    if (!resultaat.ok || slugFout) {
+    if (!resultaat.ok || Object.keys(eigenFouten).length > 0) {
       setMelding("Controleer de gemarkeerde velden.");
-      focusEersteFout({
-        ...(resultaat.ok ? {} : resultaat.fouten),
-        ...(slugFout ? { slug: slugFout } : {}),
-      });
+      focusEersteFout({ ...(resultaat.ok ? {} : resultaat.fouten), ...eigenFouten });
       return;
     }
 
@@ -388,6 +441,12 @@ export function ReisFormulier({
       });
 
       if (antwoord.status === 401) {
+        // Het formulier blijft staan onder het inlogvenster. Opnieuw opslaan
+        // na het inloggen doet de beheerder bewust zelf: zo gebeurt er niets
+        // wat hij niet ziet.
+        setMelding(
+          "Je sessie was verlopen, dus er is niets opgeslagen. Log opnieuw in en klik dan nog eens op opslaan; je wijzigingen staan nog in het formulier.",
+        );
         onUitgelogd();
         return;
       }
@@ -524,17 +583,33 @@ export function ReisFormulier({
 
       <Groep titel="Prijs">
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field
-            {...veld("price.amount")}
-            label="Bedrag in euro"
-            inputMode="decimal"
-            placeholder="1499,99"
-            value={concept.prijs}
-            onChange={(event) => {
-              const waarde = event.target.value;
-              pas(() => ({ prijs: waarde }), "price.amount");
-            }}
-          />
+          <div className="flex flex-col gap-2">
+            <Field
+              {...veld("price.amount")}
+              label="Bedrag in euro"
+              inputMode="decimal"
+              placeholder="1499,99"
+              value={concept.prijs}
+              // De melding én de lezing van het bedrag horen bij het veld.
+              aria-describedby={[
+                fouten["price.amount"] ? `${veldId("price.amount")}-fout` : "",
+                "reis-bedrag-lezing",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onChange={(event) => {
+                const waarde = event.target.value;
+                pas(() => ({ prijs: waarde }), "price.amount");
+              }}
+            />
+            {/* Toont hoe het bedrag gelezen wordt, zodat een misverstand
+                opvalt vóór het opslaan en niet pas op de site. */}
+            <p id="reis-bedrag-lezing" className="text-xs text-muted" aria-live="polite">
+              {Number.isFinite(bedrag) && bedrag > 0
+                ? `Wordt opgeslagen als ${formatPrice(bedrag)}`
+                : ""}
+            </p>
+          </div>
           <Field
             {...veld("price.note")}
             label="Notitie onder de prijs"

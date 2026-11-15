@@ -69,9 +69,12 @@ type Open = { soort: "lijst" } | { soort: "nieuw" } | { soort: "bewerk"; reis: R
 export function ReizenBeheer({
   onUitgelogd,
   onUitloggen,
+  onFormulierGewijzigd,
 }: {
   onUitgelogd: () => void;
   onUitloggen: () => void;
+  /** Doorgegeven aan het formulier, zodat het paneel weet of uitloggen iets weggooit. */
+  onFormulierGewijzigd?: (gewijzigd: boolean) => void;
 }) {
   const [status, setStatus] = useState<"laden" | "klaar" | "fout">("laden");
   const [reizen, setReizen] = useState<ReisRecord[]>([]);
@@ -95,6 +98,9 @@ export function ReizenBeheer({
       if (afgebroken) return;
       if (uitkomst.soort === "uitgelogd") {
         uitgelogdRef.current();
+        // Na het opnieuw inloggen staat hier een knop om de lijst alsnog te laden.
+        setMelding("Je bent uitgelogd.");
+        setStatus("fout");
         return;
       }
       if (uitkomst.soort === "klaar") setReizen(uitkomst.reizen);
@@ -137,6 +143,7 @@ export function ReizenBeheer({
       });
     }
     focusOpLijst.current = true;
+    onFormulierGewijzigd?.(false);
     setOpen({ soort: "lijst" });
   }
 
@@ -200,6 +207,8 @@ export function ReizenBeheer({
         // 404: al weg (bv. in een ander tabblad). Het resultaat is hetzelfde.
         setReizen((vorige) => vorige.filter((r) => r.slug !== reis.slug));
         setSucces({ tekst: `"${reis.title} — ${reis.subtitle}" is verwijderd.` });
+        // De knop waar de focus op stond, is met de rij verdwenen.
+        lijstKop.current?.focus();
         return;
       }
       const data = (await antwoord.json().catch(() => null)) as { melding?: string } | null;
@@ -219,6 +228,7 @@ export function ReizenBeheer({
         reis={open.soort === "bewerk" ? open.reis : undefined}
         onKlaar={formulierKlaar}
         onUitgelogd={onUitgelogd}
+        onGewijzigd={onFormulierGewijzigd}
       />
     );
   }
@@ -340,15 +350,20 @@ export function ReizenBeheer({
                   >
                     Bewerken
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void wisselZichtbaarheid(reis)}
-                    disabled={bezig}
-                    aria-label={`${naam} ${reis.status === "draft" ? "tonen" : "verbergen"}`}
-                  >
-                    {reis.status === "draft" ? "Tonen" : "Verbergen"}
-                  </Button>
+                  {/* Niet bij een uitverkochte reis: tonen zet terug op
+                      "gepubliceerd", en dan was "uitverkocht" stil weg. Die
+                      status wijzig je in het formulier. */}
+                  {reis.status !== "sold-out" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void wisselZichtbaarheid(reis)}
+                      disabled={bezig}
+                      aria-label={`${naam} ${reis.status === "draft" ? "tonen" : "verbergen"}`}
+                    >
+                      {reis.status === "draft" ? "Tonen" : "Verbergen"}
+                    </Button>
+                  )}
                   <button
                     type="button"
                     onClick={() => void verwijder(reis)}
