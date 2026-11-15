@@ -17,6 +17,12 @@
  *
  * Eerst valideren, dan pas schrijven: één foute reis breekt af vóór er iets
  * naar R2 of D1 gaat.
+ *
+ * Elke wrangler-aanroep heeft een time-out en draait niet-interactief; een
+ * blijvend falende aanroep breekt het script af met de naam van het bestand.
+ * Opnieuw draaien is dan veilig. Omgevingsvariabelen (voor testen):
+ *  - SEED_WRANGLER     pad naar een ander wrangler-script (standaard: node_modules)
+ *  - SEED_TIMEOUT_MS   time-out per aanroep in ms (standaard 120000)
  */
 
 import { execFileSync } from "node:child_process";
@@ -43,6 +49,18 @@ const DATA = path.join(ROOT, "src", "data");
 const WRANGLER = path.join(ROOT, "node_modules", "wrangler", "bin", "wrangler.js");
 const DATABASE = "taalibtravels-leads";
 const BUCKET = "taalibtravels-media";
+const WRANGLER_SCRIPT = process.env.SEED_WRANGLER || WRANGLER;
+const TIMEOUT_MS = Number(process.env.SEED_TIMEOUT_MS) || 120_000;
+
+// Alleen wat wrangler nodig heeft (pad, profielmap voor de login, Cloudflare-token),
+// niet de rest van de omgeving. CI=true schakelt prompts en de update-check uit.
+const DOORGEGEVEN = /^(PATH|PATHEXT|SYSTEMROOT|SYSTEMDRIVE|COMSPEC|WINDIR|HOME|USERPROFILE|APPDATA|LOCALAPPDATA|TEMP|TMP|TMPDIR|XDG_.*|HTTPS?_PROXY|NO_PROXY|NODE_EXTRA_CA_CERTS|CLOUDFLARE_.*|WRANGLER_.*)$/i;
+const WRANGLER_ENV = {
+  ...Object.fromEntries(Object.entries(process.env).filter(([naam]) => DOORGEGEVEN.test(naam))),
+  CI: "true",
+  NO_COLOR: "1",
+  WRANGLER_SEND_METRICS: "false",
+};
 
 const lokaal = process.argv.includes("--local");
 const extern = process.argv.includes("--remote");
@@ -61,19 +79,28 @@ const leesJson = async (...delen) =>
  * Wrangler draait zonder shell, dus er valt niets te injecteren via bestandsnamen.
  * Eén keer per ~200 aanroepen faalt wrangler op een netwerkcheck die met de
  * eigenlijke opdracht niets te maken heeft; vandaar de herpoging. Alles wat we
- * uitvoeren is idempotent, dus opnieuw proberen is veilig.
+ * uitvoeren is idempotent, dus opnieuw proberen is veilig. Een hangende aanroep
+ * wordt na TIMEOUT_MS gedood en telt als mislukte poging.
  */
-function wrangler(args, pogingen = 3) {
+function wrangler(args, label, pogingen = 3) {
   for (let poging = 1; ; poging += 1) {
     try {
-      return execFileSync(process.execPath, [WRANGLER, ...args], {
+      return execFileSync(process.execPath, [WRANGLER_SCRIPT, ...args], {
         cwd: ROOT,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "inherit"],
+        env: WRANGLER_ENV,
+        timeout: TIMEOUT_MS,
+        killSignal: "SIGKILL",
       });
     } catch (fout) {
-      if (poging >= pogingen) throw fout;
-      console.warn(`wrangler faalde (poging ${poging}/${pogingen}), opnieuw...`);
+      const oorzaak = fout.code === "ETIMEDOUT" ? `geen antwoord na ${TIMEOUT_MS / 1000}s` : "mislukt";
+      if (poging >= pogingen) {
+        throw new Error(
+          `${label}: wrangler ${oorzaak} na ${pogingen} pogingen. Het script is veilig opnieuw te draaien.`,
+        );
+      }
+      console.warn(`${label}: wrangler ${oorzaak} (poging ${poging}/${pogingen}), opnieuw...`);
     }
   }
 }
@@ -93,6 +120,7 @@ function sqlGetal(waarde) {
 }
 
 async function main() {
+  const begin = Date.now();
   const [images, galerijIds, inclusies] = await Promise.all([
     leesJson("images.json"),
     leesJson("gallery.json"),
@@ -161,6 +189,8 @@ async function main() {
   // 2. Varianten genereren en naar R2 uploaden.
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "seed-fotos-"));
   try {
+    const start = Date.now();
+    let nr = 0;
     for (const [id, foto] of Object.entries(images)) {
       const bron = path.join(ROOT, "public", foto.src.replace(/^\//, ""));
       // Elke breedte uit de ladder krijgt een bestand, ook als de bron smaller is:
@@ -176,7 +206,7 @@ async function main() {
         wrangler([
           "r2", "object", "put", `${BUCKET}/fotos/${id}/${breedte}.webp`,
           "--file", bestand, "--content-type", "image/webp", modus,
-        ]);
+        ], `foto ${id} variant ${breedte}`);
       }
 
       // De JPEG voor linkvoorbeelden (WhatsApp, LinkedIn): 1200px, nooit opgeschaald.
@@ -188,8 +218,11 @@ async function main() {
       wrangler([
         "r2", "object", "put", `${BUCKET}/fotos/${id}/og.jpg`,
         "--file", og, "--content-type", "image/jpeg", modus,
-      ]);
-      console.log(`foto ${id}: ${breedtes.length} varianten + og.jpg`);
+      ], `foto ${id} variant og.jpg`);
+      nr += 1;
+      console.log(
+        `[${nr}/${Object.keys(images).length}] ${id}: ${breedtes.length + 1}/${breedtes.length + 1} varianten (${Math.round((Date.now() - start) / 1000)}s)`,
+      );
     }
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
@@ -236,13 +269,23 @@ async function main() {
   const sqlBestand = path.join(await fs.mkdtemp(path.join(os.tmpdir(), "seed-sql-")), "seed.sql");
   try {
     await fs.writeFile(sqlBestand, sql.join("\n"), "utf8");
-    wrangler(["d1", "execute", DATABASE, modus, `--file=${sqlBestand}`]);
+    wrangler(["d1", "execute", DATABASE, modus, `--file=${sqlBestand}`], "D1-rijen");
   } finally {
     await fs.rm(path.dirname(sqlBestand), { recursive: true, force: true });
   }
 
+  const telling = JSON.parse(
+    wrangler(
+      [
+        "d1", "execute", DATABASE, modus, "--json", "--command",
+        "SELECT (SELECT COUNT(*) FROM reizen) AS reizen, (SELECT COUNT(*) FROM afbeeldingen) AS afbeeldingen, (SELECT COUNT(*) FROM galerij) AS galerij",
+      ],
+      "D1-telling",
+    ),
+  )[0].results[0];
+  const verwacht = Object.keys(images).length * (ALL_WIDTHS.length + 1);
   console.log(
-    `Klaar: ${Object.keys(images).length} foto's, ${reizen.length} reizen, ${galerijIds.length} galerijplekken.`,
+    `Klaar in ${Math.round((Date.now() - begin) / 1000)}s. D1: ${telling.reizen} reizen, ${telling.afbeeldingen} afbeeldingen, ${telling.galerij} galerijplekken (bestand: ${reizen.length}/${Object.keys(images).length}/${galerijIds.length}). R2: ${verwacht} objecten geschreven.`,
   );
 }
 
