@@ -41,6 +41,7 @@ export function FotosBeheer({
   const [fotos, setFotos] = useState<AfbeeldingMetGebruik[]>([]);
   const [melding, setMelding] = useState<string | null>(null);
   const [ronde, setRonde] = useState(0);
+  const [verwijderd, setVerwijderd] = useState<string | null>(null);
 
   // Via een ref, zodat een nieuwe callback van de ouder het laden niet opnieuw start.
   const uitgelogdRef = useRef(onUitgelogd);
@@ -117,6 +118,10 @@ export function FotosBeheer({
           verwijderen.
         </p>
 
+        <p role="status" className="sr-only">
+          {verwijderd}
+        </p>
+
         {status === "laden" && (
           <p className="py-12 text-center text-sm text-muted">Bezig met laden…</p>
         )}
@@ -142,7 +147,7 @@ export function FotosBeheer({
           <ScrolVak
             rijHoogte={KAART_HOOGTE}
             labelId="bibliotheek-titel"
-            kolommen="grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            kolommen="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
           >
             {fotos.map((foto) => (
               <FotoKaart
@@ -155,6 +160,7 @@ export function FotosBeheer({
                 }
                 onVerwijderd={() => {
                   setFotos((vorige) => vorige.filter((f) => f.id !== foto.id));
+                  setVerwijderd("Foto verwijderd.");
                   onBibliotheekGewijzigd?.();
                 }}
                 onUitgelogd={uitgelogd}
@@ -459,14 +465,19 @@ function UploadStatus({ item }: { item: WachtrijItem }) {
 }
 
 /** Vaste rijhoogte van de bibliotheek: zo is "twee rijen" in het scrolvak echt twee rijen. */
-const KAART_HOOGTE = "19rem";
-/** Zoveel plekken tonen we per foto voordat de rest achter "+N meer" gaat. */
-const ZICHTBARE_PLEKKEN = 2;
+const KAART_HOOGTE = "8rem";
 
 /* -------------------------------------------------------------------------- */
 /* Eén foto in de bibliotheek                                                 */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * De kaart is alleen de foto; alles wat je met een foto kunt doen zit in een
+ * dialoog. Het `<dialog>`-element geeft focusval, Esc en het terugzetten van de
+ * focus gratis. De inhoud wordt pas gemount als de dialoog open is, zodat een
+ * bibliotheek van honderden foto's niet honderden grote voorbeelden en
+ * formulieren in de DOM zet, en de bewerkstatus bij sluiten vanzelf verdwijnt.
+ */
 function FotoKaart({
   foto,
   onGewijzigd,
@@ -478,10 +489,92 @@ function FotoKaart({
   onVerwijderd: () => void;
   onUitgelogd: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const knopRef = useRef<HTMLButtonElement>(null);
+  const dialoogRef = useRef<HTMLDialogElement>(null);
+  const titelId = `foto-dialoog-${foto.id}`;
+
+  function sluit() {
+    dialoogRef.current?.close();
+  }
+
+  return (
+    <li>
+      <button
+        ref={knopRef}
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => {
+          setOpen(true);
+          dialoogRef.current?.showModal();
+        }}
+        className="relative block h-full w-full cursor-pointer overflow-hidden rounded-2xl border border-line bg-sunken shadow-card transition-colors hover:border-accent/60"
+      >
+        <Image
+          // Het basispad: de globale loader (`image-loader.ts`) maakt er de varianten van.
+          src={`${MEDIA_PAD}${foto.sleutel}`}
+          alt={foto.alt}
+          fill
+          sizes="(min-width: 1280px) 15vw, (min-width: 1024px) 20vw, (min-width: 640px) 30vw, 50vw"
+          className="object-cover"
+        />
+      </button>
+
+      <dialog
+        ref={dialoogRef}
+        aria-labelledby={titelId}
+        onClose={() => {
+          setOpen(false);
+          // De browser zet de focus meestal zelf terug; dit dekt de gevallen waarin dat niet gebeurt.
+          knopRef.current?.focus();
+        }}
+        // Een klik op de achtergrond raakt het `<dialog>` zelf; de inhoud heeft eigen vulling.
+        onClick={(event) => {
+          if (event.target === event.currentTarget) sluit();
+        }}
+        className="m-auto max-h-[calc(100dvh-2rem)] w-[min(32rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-3xl border border-line bg-surface p-0 text-body shadow-card backdrop:bg-page/85 backdrop:backdrop-blur-sm"
+      >
+        {open && (
+          <FotoDialoogInhoud
+            foto={foto}
+            titelId={titelId}
+            onSluit={sluit}
+            onGewijzigd={onGewijzigd}
+            onVerwijderd={() => {
+              // De kaart verdwijnt, en met hem de focus: zet die op het scrolvak. Eerst sluiten,
+              // want zolang de modale dialoog open is, kan de rest van de pagina de focus niet krijgen.
+              sluit();
+              knopRef.current?.closest<HTMLElement>('[role="group"]')?.focus();
+              onVerwijderd();
+            }}
+            onUitgelogd={onUitgelogd}
+          />
+        )}
+      </dialog>
+    </li>
+  );
+}
+
+function FotoDialoogInhoud({
+  foto,
+  titelId,
+  onSluit,
+  onGewijzigd,
+  onVerwijderd,
+  onUitgelogd,
+}: {
+  foto: AfbeeldingMetGebruik;
+  titelId: string;
+  onSluit: () => void;
+  onGewijzigd: (foto: { id: string; alt: string }) => void;
+  onVerwijderd: () => void;
+  onUitgelogd: () => void;
+}) {
   const [bewerken, setBewerken] = useState(false);
   const [alt, setAlt] = useState(foto.alt);
   const [bezig, setBezig] = useState<"opslaan" | "verwijderen" | null>(null);
   const [melding, setMelding] = useState<string | null>(null);
+  const [bevestiging, setBevestiging] = useState<string | null>(null);
   const altVeld = `alt-bewerk-${foto.id}`;
 
   async function bewaar(event: FormEvent<HTMLFormElement>) {
@@ -507,6 +600,7 @@ function FotoKaart({
       const data = (await antwoord.json()) as AfbeeldingAntwoord;
       if (data.ok) onGewijzigd(data.afbeelding);
       setBewerken(false);
+      setBevestiging("Alt-tekst opgeslagen.");
     } catch {
       setMelding("Geen verbinding met de server.");
     } finally {
@@ -520,6 +614,7 @@ function FotoKaart({
     }
     setBezig("verwijderen");
     setMelding(null);
+    setBevestiging(null);
     try {
       const antwoord = await fetch(afbeeldingPad(foto.id), {
         method: "DELETE",
@@ -537,142 +632,124 @@ function FotoKaart({
     }
   }
 
-  const gebruikOp = foto.gebruikOp;
-  const zichtbaar = gebruikOp.slice(0, ZICHTBARE_PLEKKEN);
-  const verborgen = gebruikOp.length - zichtbaar.length;
-
   return (
-    <li className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
-      <div className="relative h-20 shrink-0 bg-sunken">
+    <div className="flex flex-col gap-4 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <h4 id={titelId} className="text-base font-semibold text-heading">
+          Foto beheren
+        </h4>
+        <Button variant="ghost" size="sm" onClick={onSluit} disabled={bezig !== null}>
+          Sluiten
+        </Button>
+      </div>
+
+      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-2xl bg-sunken">
         <Image
-          // Het basispad: de globale loader (`image-loader.ts`) maakt er de varianten van.
           src={`${MEDIA_PAD}${foto.sleutel}`}
           alt={foto.alt}
           fill
-          sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 30vw, 50vw"
-          className="object-cover"
+          sizes="(min-width: 640px) 32rem, 100vw"
+          className="object-contain"
         />
-        <span className="absolute right-1.5 bottom-1.5 rounded-full bg-surface/90 px-2 py-0.5 text-[10px] leading-4 text-muted">
-          {foto.width} × {foto.height}px
-        </span>
       </div>
 
-      {/* Scrolt zelf als een lange melding of het formulier niet past, zodat niets wegvalt. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
-        {bewerken ? (
-          <form onSubmit={bewaar} noValidate className="flex flex-col gap-3">
-            <Field
-              naam={altVeld}
-              label="Alt-tekst"
-              value={alt}
-              maxLength={UPLOAD.maxAlt}
-              required
-              autoFocus
+      {bewerken ? (
+        <form onSubmit={bewaar} noValidate className="flex flex-col gap-3">
+          <Field
+            naam={altVeld}
+            label="Alt-tekst"
+            value={alt}
+            maxLength={UPLOAD.maxAlt}
+            required
+            autoFocus
+            disabled={bezig !== null}
+            onChange={(event) => setAlt(event.target.value)}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" size="sm" disabled={bezig !== null}>
+              {bezig === "opslaan" ? "Opslaan…" : "Opslaan"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               disabled={bezig !== null}
-              onChange={(event) => setAlt(event.target.value)}
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" size="sm" disabled={bezig !== null}>
-                {bezig === "opslaan" ? "Opslaan…" : "Opslaan"}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={bezig !== null}
-                onClick={() => {
-                  setAlt(foto.alt);
-                  setMelding(null);
-                  setBewerken(false);
-                }}
-              >
-                Annuleren
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <p className="line-clamp-2 text-xs leading-4 text-body" title={foto.alt}>
-            {foto.alt}
-          </p>
-        )}
-
-        {/* Een melding vervangt de gebruiksregel: een mislukt verwijderen noemt de plekken zelf. */}
-        {!bewerken && !melding && (
-          <GebruikRegel zichtbaar={zichtbaar} verborgen={verborgen} alle={gebruikOp} />
-        )}
-
-        {melding && (
-          <p role="alert" className="rounded-xl bg-danger-soft px-2.5 py-1.5 text-xs leading-4 text-danger">
-            {melding}{" "}
-            <button type="button" onClick={() => setMelding(null)} className="font-semibold underline">
-              Sluiten
-            </button>
-          </p>
-        )}
-
-        {!bewerken && (
-          <div className="mt-auto flex flex-wrap gap-1">
-            <button
-              type="button"
               onClick={() => {
                 setAlt(foto.alt);
                 setMelding(null);
-                setBewerken(true);
+                setBewerken(false);
               }}
-              disabled={bezig !== null}
-              className="rounded-full px-2.5 py-1 text-xs font-semibold text-heading transition-colors hover:bg-surface-strong disabled:opacity-50"
             >
-              Alt-tekst wijzigen
-            </button>
-            <button
-              type="button"
-              onClick={() => void verwijder()}
-              disabled={bezig !== null}
-              className="rounded-full px-2.5 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger-soft disabled:opacity-50"
-            >
-              {bezig === "verwijderen" ? "Bezig…" : "Verwijder"}
-            </button>
+              Annuleren
+            </Button>
           </div>
-        )}
-      </div>
-    </li>
+        </form>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-semibold tracking-wide text-muted uppercase">Alt-tekst</p>
+          <p className="text-sm leading-relaxed text-body">{foto.alt}</p>
+        </div>
+      )}
+
+      {/* Een melding vervangt de gebruiksregel: een mislukt verwijderen noemt de plekken zelf. */}
+      {!bewerken && !melding && <GebruikRegel alle={foto.gebruikOp} />}
+
+      <p role="status" className="text-sm text-accent empty:hidden">
+        {bevestiging}
+      </p>
+
+      {melding && (
+        <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-sm leading-relaxed text-danger">
+          {melding}{" "}
+          <button type="button" onClick={() => setMelding(null)} className="font-semibold underline">
+            Melding sluiten
+          </button>
+        </p>
+      )}
+
+      {!bewerken && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={bezig !== null}
+            onClick={() => {
+              setAlt(foto.alt);
+              setMelding(null);
+              setBevestiging(null);
+              setBewerken(true);
+            }}
+          >
+            Alt-tekst wijzigen
+          </Button>
+          <button
+            type="button"
+            onClick={() => void verwijder()}
+            disabled={bezig !== null}
+            className="rounded-full px-4 py-2 text-xs font-semibold text-danger transition-colors hover:bg-danger-soft disabled:opacity-50 sm:text-sm"
+          >
+            {bezig === "verwijderen" ? "Bezig…" : "Verwijder"}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
-/** "Niet in gebruik" of de eerste plekken; de rest staat in `title` en voor schermlezers in de tekst. */
-function GebruikRegel({
-  zichtbaar,
-  verborgen,
-  alle,
-}: {
-  zichtbaar: string[];
-  verborgen: number;
-  alle: string[];
-}) {
+/** "Niet in gebruik" of alle plekken waar de foto op staat. */
+function GebruikRegel({ alle }: { alle: string[] }) {
   if (alle.length === 0) {
     return (
-      <p className="rounded-lg bg-accent-soft px-2 py-1 text-xs leading-4 font-semibold text-accent">
+      <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm font-semibold text-accent">
         Niet in gebruik — veilig te verwijderen
       </p>
     );
   }
 
   return (
-    <div className="flex flex-col gap-0.5 text-xs leading-4" title={alle.join("\n")}>
-      <ul className="flex flex-col gap-0.5" aria-label="In gebruik bij">
-        {zichtbaar.map((plek) => (
-          <li key={plek} className="line-clamp-2 text-body">
-            {plek}
-          </li>
-        ))}
-      </ul>
-      {verborgen > 0 && (
-        <p className="text-muted">
-          <span aria-hidden="true">+{verborgen} meer</span>
-          <span className="sr-only">
-            en nog {verborgen}: {alle.slice(zichtbaar.length).join(", ")}
-          </span>
-        </p>
-      )}
-    </div>
+    <ul className="flex flex-col gap-1 text-sm text-body" aria-label="In gebruik bij">
+      {alle.map((plek) => (
+        <li key={plek}>{plek}</li>
+      ))}
+    </ul>
   );
 }
