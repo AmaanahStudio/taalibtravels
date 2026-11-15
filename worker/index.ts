@@ -1,15 +1,14 @@
 /**
  * De enige servercode van de site.
  *
- * Alles buiten /api/ is een statisch bestand dat Cloudflare rechtstreeks van het
- * netwerk serveert; deze Worker draait alleen voor het inschrijfformulier en het
- * admin-overzicht. Zie `run_worker_first` in wrangler.jsonc.
+ * /api/* wordt hier afgehandeld; al het andere gaat naar de OpenNext-handler.
  *
  * De validatieregels staan in `src/lib/leads.ts` en worden gedeeld met het
  * formulier. Wat hier gebeurt is het oordeel dat telt: een bezoeker kan de
  * controle in de browser overslaan.
  */
 
+import openNext from "../.open-next/worker.js";
 import { API, type Deelnemer, type DeelnemersAntwoord } from "../src/lib/api";
 import { valideerLead } from "../src/lib/leads";
 import {
@@ -51,15 +50,17 @@ interface ExportRij extends Omit<DeelnemerRij, "id"> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     const url = new URL(request.url);
 
-    /*
-     * Vangnet. `run_worker_first: ["/api/*"]` hoort ervoor te zorgen dat er hier
-     * niets anders binnenkomt, maar als die regel ooit sneuvelt, is dit het
-     * verschil tussen "de site werkt" en "elke pagina geeft 404".
-     */
-    if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
+    // Alles buiten /api/ is van Next (OpenNext): pagina's, assets en 404's.
+    if (!url.pathname.startsWith("/api/")) {
+      return openNext.fetch(request, env, ctx);
+    }
 
     try {
       return await routeer(request, url, env);

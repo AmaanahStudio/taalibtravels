@@ -14,8 +14,8 @@
     "cf-typegen": "wrangler types",
     "hero-video": "node scripts/build-hero-video.mjs",
     "hero-video:web": "node scripts/build-hero-web.mjs",
-    "preview": "next build && wrangler dev",
-    "deploy": "next build && wrangler deploy"
+    "preview": "opennextjs-cloudflare build && wrangler dev",
+    "deploy": "opennextjs-cloudflare build && wrangler deploy"
   },
   "dependencies": {
     "next": "16.2.12",
@@ -23,6 +23,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

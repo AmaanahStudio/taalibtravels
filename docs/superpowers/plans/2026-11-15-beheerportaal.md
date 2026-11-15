@@ -227,4 +227,15 @@
 
 ## Spike result
 
-_(Filled in by Task 1.)_
+**Besluit: werkt, met aanpassingen** (Task 1, 2026-11-15). Doorgaan met het plan.
+
+- **Versie:** `@opennextjs/cloudflare@1.20.2`. Dat is de nieuwste die Next 16.2.12 en wrangler 4.121 in zijn peer-range heeft; vanaf 1.20.3 eist hij Next >=16.3.3 (en wrangler >=4.125), 1.20.16 zelfs >=16.4.5. Een upgrade van Next en wrangler is dus een aparte stap.
+- **Build/preview:** `opennextjs-cloudflare build` slaagt (lint en typecheck ook). Scripts `preview` en `deploy` roepen dat nu aan i.p.v. `next build`. `wrangler dev` serveert `/`, `/reizen`, `/reizen/<slug>`, 404 en `/giveaway` correct.
+- **D1 vanuit Next:** een `force-dynamic` pagina leest via `getCloudflareContext({ async: true }).env.DB` en toonde 0, daarna 1 na een `wrangler d1 execute --local` INSERT, zonder rebuild. `/api/admin/deelnemers` geeft nog 401.
+- **Worker-compositie:** `worker/index.ts` blijft de `main` en importeert `../.open-next/worker.js`; alles buiten `/api/` gaat naar `openNext.fetch(request, env, ctx)`. Dat composeert zonder problemen. Aanpassingen: `worker/open-next.d.ts` (typedeclaratie, het bestand bestaat pas na de build), `fetch` krijgt `ctx`, `assets.directory` is `.open-next/assets`, `run_worker_first` en `not_found_handling` zijn weggehaald, `compatibility_flags: ["nodejs_compat", "global_fetch_strictly_public"]` toegevoegd. De DO-klassen (`DOQueueHandler` e.d.) worden niet geherexporteerd: zonder incrementele cache/queue-config zijn ze niet gebonden.
+- **Env-type:** het root-tsconfig sluit `worker-configuration.d.ts` uit, dus `CloudflareEnv` kent `DB` niet in `src/`. Task 4+ moet een eigen `interface CloudflareEnv` of een smalle cast gebruiken (nu in de spike een cast).
+- **Headers (Task 8):** `public/_headers` geldt alleen voor statische assets (`/images/...` kreeg CSP e.d.). De HTML-responses van `/`, `/reizen/<slug>` en de 404 hebben geen CSP, `X-Content-Type-Options`, `Referrer-Policy` of `Permissions-Policy`. Fix: de headers in `worker/index.ts` op elke niet-asset-response zetten (of via `headers()` in `next.config.ts`; die draait nu wel). Let op: de CSP vereist dan nog steeds `'unsafe-inline'` voor scripts.
+- **Caching (Task 6/8):** prerendered pagina's komen terug met `Cache-Control: s-maxage=31536000`. Zonder incrementele cache (R2) en revalidatie blijven ze tot de volgende build staan; pagina's die uit D1 gaan lezen moeten `force-dynamic` zijn of expliciet revalideren.
+- **Bundelgrootte:** `wrangler deploy --dry-run`: Total Upload 5293.90 KiB, gzip 1146.66 KiB. Volgens de huidige Cloudflare-limietenpagina is er geen gzip-limiet en 64 MiB ongecomprimeerd voor Free en Paid; dit past dus ruim op het Free-plan. Betaald plan is hiervoor niet nodig.
+- **Overig:** `package-lock.json` veranderde sterk door de installatie (npm herschreef de boom); controleer dat bij review. Image-loader en `deviceSizes` ongewijzigd; `output: "export"` en de exportcomment zijn weg.
+

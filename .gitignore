@@ -41,6 +41,8 @@ yarn-error.log*
 
 # cloudflare
 .wrangler/
+# uitvoer van `opennextjs-cloudflare build` (worker + assets)
+/.open-next/
 # De secrets voor `wrangler dev`. Let op: dit valt NIET onder .env* hierboven —
 # zonder deze regel belandt het adminwachtwoord in git. .dev.vars.example is de
 # lege versie die wel meegaat.

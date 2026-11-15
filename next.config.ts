@@ -10,14 +10,11 @@ const nextConfig: NextConfig = {
     // regel kiest Turbopack die map als workspace-root.
     root: path.resolve(import.meta.dirname),
   },
-  output: "export",
   images: {
     /*
-     * Een statische export draait de Image Optimization API van Next nergens.
-     * Het alternatief `unoptimized: true` levert helemaal geen `srcset` op — dan
-     * haalt een telefoon dezelfde foto van 1400px binnen als een desktop. Met een
-     * eigen loader mag dat wél: `scripts/build-images.mjs` maakt de WebP-varianten
-     * bij het bouwen, `image-loader.ts` wijst ze aan.
+     * Eigen loader: de varianten komen uit `scripts/build-images.mjs`, niet uit de
+     * Image Optimization API van Next. Zo krijgt elke foto een `srcset` zonder dat
+     * er per afbeelding een Worker-aanroep nodig is.
      */
     loader: "custom",
     loaderFile: "./src/lib/image-loader.ts",

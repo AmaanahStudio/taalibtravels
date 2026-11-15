@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     "worker-configuration.d.ts",
     // Tijdelijke bundles van `wrangler dev`/`deploy`.
     ".wrangler/**",
+    ".open-next/**",
   ]),
 ]);
 
