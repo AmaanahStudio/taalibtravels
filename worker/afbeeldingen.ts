@@ -5,13 +5,15 @@
  * uit dat de beheerder ingelogd is. Wat schrijft, controleert daarnaast zelf de
  * Origin.
  *
- * De bestanden staan in R2 onder `fotos/<id>/<breedte>.webp`, D1 bewaart de
+ * De bestanden staan in R2 onder `fotos/<id>/<breedte>.webp`, plus `fotos/<id>/og.jpg`
+ * als JPEG-deelafbeelding voor linkvoorbeelden. D1 bewaart de
  * beschrijving en in `r2_sleutel` het voorvoegsel `fotos/<id>`. De id maakt de
  * Worker zelf aan; niets wat de browser stuurt, wordt ooit een R2-sleutel.
  */
 
 import {
   API,
+  OG_VELD,
   UPLOAD,
   variantVeld,
   type AfbeeldingAntwoord,
@@ -27,14 +29,18 @@ import { ALL_WIDTHS } from "../src/lib/foto-breedtes";
 /** Bovengrens op het overzicht, zodat één verzoek nooit de hele tabel trekt. */
 const OVERZICHT_LIMIET = 2000;
 
+const OG_BESTAND = "og.jpg";
+
 /** Ruimte voor de multipart-grenzen en de tekstvelden naast de bestanden. */
 const MULTIPART_MARGE = 64 * 1024;
-const MAX_UPLOAD_BYTES = ALL_WIDTHS.length * UPLOAD.maxVariantBytes + MULTIPART_MARGE;
+const MAX_UPLOAD_BYTES =
+  ALL_WIDTHS.length * UPLOAD.maxVariantBytes + UPLOAD.maxOgBytes + MULTIPART_MARGE;
 
 const TOEGESTANE_VELDEN = new Set([
   "alt",
   "width",
   "height",
+  OG_VELD,
   ...ALL_WIDTHS.map(variantVeld),
 ]);
 
@@ -148,7 +154,16 @@ async function upload(request: Request, env: Env): Promise<Response> {
   // Kort genoeg voor een URL, en met 64 willekeurige bits niet te raden.
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
   const sleutel = `fotos/${id}`;
-  const varianten = [...invoer.varianten];
+  const objecten: [string, ArrayBuffer, string][] = [
+    ...[...invoer.varianten].map(
+      ([breedte, bytes]): [string, ArrayBuffer, string] => [
+        `${sleutel}/${breedte}.webp`,
+        bytes,
+        "image/webp",
+      ],
+    ),
+    [`${sleutel}/${OG_BESTAND}`, invoer.og, "image/jpeg"],
+  ];
 
   /*
    * Eerst R2, dan D1: zo verwijst de database nooit naar bestanden die er niet
@@ -157,10 +172,8 @@ async function upload(request: Request, env: Env): Promise<Response> {
    */
   try {
     const uitkomsten = await Promise.allSettled(
-      varianten.map(([breedte, bytes]) =>
-        env.MEDIA.put(`${sleutel}/${breedte}.webp`, bytes, {
-          httpMetadata: { contentType: "image/webp" },
-        }),
+      objecten.map(([naam, bytes, contentType]) =>
+        env.MEDIA.put(naam, bytes, { httpMetadata: { contentType } }),
       ),
     );
     const mislukt = uitkomsten.find((u) => u.status === "rejected");
@@ -175,7 +188,7 @@ async function upload(request: Request, env: Env): Promise<Response> {
   } catch (fout) {
     // Een fout bij het opruimen mag de oorspronkelijke fout niet verbergen.
     try {
-      await env.MEDIA.delete(varianten.map(([breedte]) => `${sleutel}/${breedte}.webp`));
+      await env.MEDIA.delete(objecten.map(([naam]) => naam));
     } catch (opruimFout) {
       console.error(`Opruimen van ${sleutel}/ na mislukte upload faalde:`, opruimFout);
     }
@@ -196,6 +209,7 @@ type UploadInvoer =
       width: number;
       height: number;
       varianten: Map<number, ArrayBuffer>;
+      og: ArrayBuffer;
     }
   | { ok: false; melding: string };
 
@@ -238,7 +252,25 @@ async function valideerUpload(formulier: FormData): Promise<UploadInvoer> {
     varianten.set(breedte, bytes);
   }
 
-  return { ok: true, alt, width, height, varianten };
+  const ogDelen = formulier.getAll(OG_VELD);
+  if (ogDelen.length !== 1) return fout("Er moet precies één deelafbeelding (og) zijn.");
+  const ogDeel = ogDelen[0];
+  if (typeof ogDeel === "string") return fout("De deelafbeelding is geen bestand.");
+  if (ogDeel.type !== "image/jpeg") return fout("De deelafbeelding is geen JPEG.");
+  if (ogDeel.size > UPLOAD.maxOgBytes) {
+    return fout(`De deelafbeelding is groter dan ${UPLOAD.maxOgBytes / 1024} KB.`);
+  }
+  const og = await ogDeel.arrayBuffer();
+  if (!isJpeg(og)) return fout("De deelafbeelding is geen geldige JPEG.");
+
+  return { ok: true, alt, width, height, varianten, og };
+}
+
+/** Een JPEG begint met FF D8 FF; de browser-opgegeven type bewijst niets, de bytes wel. */
+function isJpeg(bytes: ArrayBuffer): boolean {
+  if (bytes.byteLength < 4) return false;
+  const kop = new Uint8Array(bytes, 0, 3);
+  return kop[0] === 0xff && kop[1] === 0xd8 && kop[2] === 0xff;
 }
 
 /**

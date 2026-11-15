@@ -12,6 +12,8 @@ export {
   ALL_WIDTHS,
   DEVICE_SIZES,
   IMAGE_SIZES,
+  OG_BREEDTE,
+  OG_KWALITEIT,
   WEBP_QUALITY,
 } from "../src/lib/foto-breedtes.ts";
 

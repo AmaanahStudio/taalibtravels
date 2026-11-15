@@ -30,3 +30,13 @@ export const ALL_WIDTHS: readonly number[] = [...IMAGE_SIZES, ...DEVICE_SIZES].s
 
 /** Kwaliteit voor WebP (0–100, zoals sharp hem leest). 78 is visueel nagenoeg gelijk aan de JPEG-bron. */
 export const WEBP_QUALITY = 78;
+
+/**
+ * Het deelbeeld voor linkvoorbeelden (WhatsApp, LinkedIn): een JPEG, omdat niet elke
+ * previewer WebP als `og:image` leest. Altijd 1200px breed, nooit opgeschaald; een
+ * smallere bron houdt zijn eigen breedte.
+ */
+export const OG_BREEDTE = 1200;
+
+/** Kwaliteit van de deel-JPEG (0–100, zoals sharp hem leest). */
+export const OG_KWALITEIT = 82;

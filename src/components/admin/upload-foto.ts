@@ -4,11 +4,11 @@
  *
  * De browser maakt de varianten, niet de Worker: een Worker heeft geen sharp en
  * te weinig CPU-tijd om een foto van 4000px te herschalen. De Worker controleert
- * wel elke variant (WebP-handtekening, grootte, de volledige ladder).
+ * wel elke variant (WebP-handtekening, grootte, de volledige ladder, de JPEG-deelafbeelding).
  */
 
-import { API, UPLOAD, variantVeld, type AfbeeldingAntwoord, type AfbeeldingRecord } from "@/lib/api";
-import { ALL_WIDTHS, WEBP_QUALITY } from "@/lib/foto-breedtes";
+import { API, OG_VELD, UPLOAD, variantVeld, type AfbeeldingAntwoord, type AfbeeldingRecord } from "@/lib/api";
+import { ALL_WIDTHS, OG_BREEDTE, OG_KWALITEIT, WEBP_QUALITY } from "@/lib/foto-breedtes";
 
 /**
  * Langste zijde waarop de bron wordt afgetopt. Een foto van een moderne camera
@@ -27,6 +27,8 @@ export interface Varianten {
   width: number;
   height: number;
   varianten: Map<number, Blob>;
+  /** JPEG-deelafbeelding voor linkvoorbeelden, 1200px breed (of de bronbreedte als die smaller is). */
+  og: Blob;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -106,6 +108,7 @@ export async function maakVarianten(bestand: File): Promise<Varianten> {
   }
 
   try {
+    const og = await maakOg(bron, width, height);
     const varianten = new Map<number, Blob>();
     let vorige: CanvasImageSource = bron;
     let vorigeBreedte = 0;
@@ -136,10 +139,43 @@ export async function maakVarianten(bestand: File): Promise<Varianten> {
       varianten.set(breedte, vorigeBlob);
     }
 
-    return { width, height, varianten };
+    return { width, height, varianten, og };
   } finally {
     bron.close();
   }
+}
+
+/**
+ * De deel-JPEG, getekend vanaf dezelfde reeds gedecodeerde bitmap als de WebP's.
+ * JPEG via canvas werkt in élke browser, ook op iOS, dus hier is geen WASM nodig.
+ * Wit als ondergrond: JPEG kent geen transparantie en een PNG met alfa werd anders zwart.
+ */
+async function maakOg(bron: ImageBitmap, width: number, height: number): Promise<Blob> {
+  const doelBreedte = Math.min(OG_BREEDTE, width);
+  const doelHoogte = Math.max(1, Math.round((height * doelBreedte) / width));
+  const canvas = document.createElement("canvas");
+  canvas.width = doelBreedte;
+  canvas.height = doelHoogte;
+  const context = canvas.getContext("2d");
+  if (!context) throw new UploadFout("De browser kon de foto niet verwerken.");
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, doelBreedte, doelHoogte);
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(bron, 0, 0, doelBreedte, doelHoogte);
+
+  const blob = await new Promise<Blob | null>((klaar) =>
+    canvas.toBlob(klaar, "image/jpeg", OG_KWALITEIT / 100),
+  );
+  if (!blob || blob.type !== "image/jpeg") {
+    throw new UploadFout("Deze browser kon de foto niet omzetten naar JPEG. Probeer het opnieuw.");
+  }
+  if (blob.size > UPLOAD.maxOgBytes) {
+    throw new UploadFout(
+      `De deelafbeelding wordt groter dan ${UPLOAD.maxOgBytes / 1024} KB. Kies een foto met minder fijne details of een kleinere versie.`,
+    );
+  }
+  return blob;
 }
 
 /**
@@ -255,7 +291,7 @@ export type UploadUitkomst =
  * `onVoortgang` krijgt een getal van 0 tot 1.
  */
 export function uploadFoto(
-  { width, height, varianten }: Varianten,
+  { width, height, varianten, og }: Varianten,
   alt: string,
   onVoortgang: (deel: number) => void,
 ): Promise<UploadUitkomst> {
@@ -266,6 +302,7 @@ export function uploadFoto(
   for (const [breedte, blob] of varianten) {
     formulier.append(variantVeld(breedte), blob, `${breedte}.webp`);
   }
+  formulier.append(OG_VELD, og, "og.jpg");
 
   return new Promise((klaar) => {
     const verzoek = new XMLHttpRequest();

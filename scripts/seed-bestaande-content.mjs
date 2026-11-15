@@ -12,7 +12,8 @@
  *  - D1-rijen worden NOOIT overschreven (`ON CONFLICT DO NOTHING`). Een tikfout
  *    in de JSON herstellen en opnieuw draaien verandert in D1 dus niets; wat de
  *    beheerder inmiddels in het portaal wijzigde blijft zo ook staan.
- *  - R2-varianten worden WEL overschreven, elke run opnieuw.
+ *  - R2-varianten worden WEL overschreven, elke run opnieuw. Per foto zijn dat de
+ *    WebP-ladder en `og.jpg`; draai opnieuw om og.jpg bij te maken.
  *
  * Eerst valideren, dan pas schrijven: één foute reis breekt af vóór er iets
  * naar R2 of D1 gaat.
@@ -26,7 +27,7 @@ import { fileURLToPath } from "node:url";
 
 import sharp from "sharp";
 
-import { ALL_WIDTHS, WEBP_QUALITY } from "./image-sizes.mjs";
+import { ALL_WIDTHS, OG_BREEDTE, OG_KWALITEIT, WEBP_QUALITY } from "./image-sizes.mjs";
 
 // Vóór de import van reizen.ts: op een te oude Node zou die met een cryptische
 // syntaxfout stranden in plaats van met deze melding.
@@ -178,7 +179,18 @@ async function main() {
           "--file", bestand, "--content-type", "image/webp", modus,
         ]);
       }
-      console.log(`foto ${id}: ${breedtes.length} varianten`);
+
+      // De JPEG voor linkvoorbeelden (WhatsApp, LinkedIn): 1200px, nooit opgeschaald.
+      const og = path.join(tmp, `${id}-og.jpg`);
+      await sharp(bron)
+        .resize({ width: Math.min(OG_BREEDTE, foto.width), withoutEnlargement: true })
+        .jpeg({ quality: OG_KWALITEIT })
+        .toFile(og);
+      wrangler([
+        "r2", "object", "put", `${BUCKET}/fotos/${id}/og.jpg`,
+        "--file", og, "--content-type", "image/jpeg", modus,
+      ]);
+      console.log(`foto ${id}: ${breedtes.length} varianten + og.jpg`);
     }
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });

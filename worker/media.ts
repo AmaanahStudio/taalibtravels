@@ -9,8 +9,8 @@
 
 import { MEDIA_PAD } from "../src/lib/api";
 
-/** De vorm die `afbeeldingen.ts` schrijft: `fotos/<id>/<breedte>.webp`. */
-const MEDIA_SLEUTEL = /^fotos\/[a-z0-9-]+\/\d+\.webp$/;
+/** De vormen die `afbeeldingen.ts` schrijft: `fotos/<id>/<breedte>.webp` en `fotos/<id>/og.jpg`. */
+const MEDIA_SLEUTEL = /^fotos\/[a-z0-9-]+\/(?:\d+\.webp|og\.jpg)$/;
 
 /*
  * Een sleutel bevat een id die nooit hergebruikt wordt; een ander bestand krijgt
@@ -51,7 +51,7 @@ export async function serveerMedia(
   headers.set("ETag", object.httpEtag);
   headers.set("Cache-Control", MEDIA_CACHE);
   // Het type staat vast; een ander type in de metadata mag de browser niet verleiden.
-  headers.set("Content-Type", "image/webp");
+  headers.set("Content-Type", sleutel.endsWith(".jpg") ? "image/jpeg" : "image/webp");
   headers.set("X-Content-Type-Options", "nosniff");
 
   if (request.method === "HEAD") {

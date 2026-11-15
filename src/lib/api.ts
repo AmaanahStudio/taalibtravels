@@ -120,10 +120,18 @@ export interface GalerijAntwoord {
 export const UPLOAD = {
   /** Per WebP-variant. Samen blijft een upload zo ruim binnen de requestlimiet. */
   maxVariantBytes: 1024 * 1024,
+  /**
+   * De deel-JPEG van 1200px. Een foto van de site weegt 40–280 KB; ruime marge voor
+   * een foto met veel fijne ruis.
+   */
+  maxOgBytes: 600 * 1024,
   maxAlt: 200,
   /** Breedte en hoogte van de bron, in pixels. */
   maxAfmeting: 10000,
 } as const;
+
+/** Naam van het formulierveld met de deel-JPEG. */
+export const OG_VELD = "og";
 
 /** Naam van het formulierveld met de variant van `breedte` pixels, bv. `v640`. */
 export function variantVeld(breedte: number): string {
