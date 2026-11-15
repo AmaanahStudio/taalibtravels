@@ -36,6 +36,12 @@ interface D1Statement {
 export interface LeesOpties {
   /** Ook reizen met status `draft`; alleen voor het beheer. */
   metConcepten?: boolean;
+  /**
+   * Hoe de gedeelde galerij gelezen wordt voor reizen zonder eigen galerij.
+   * De pagina's geven hier hun per verzoek ontdubbelde lezer mee, zodat de
+   * homepage dezelfde galerij niet twee keer ophaalt.
+   */
+  leesGedeeldeGalerij?: () => Promise<ImageAsset[]>;
 }
 
 /**
@@ -136,7 +142,7 @@ export async function leesReisRecord(db: ReisD1, slug: string): Promise<ReisReco
 export async function leesReizen(db: ReisD1, opts: LeesOpties = {}): Promise<Trip[]> {
   const rijen = await leesRijen(db, opts.metConcepten === true);
   const records = perReis(rijen, (rij) => rij.slug, (rij) => naarRecord(rij, "strikt"));
-  return naarTrips(db, records);
+  return naarTrips(db, records, opts.leesGedeeldeGalerij);
 }
 
 /**
@@ -151,7 +157,7 @@ export async function leesReis(
   const rij = await leesRij(db, slug);
   if (!rij || (rij.status === "draft" && opts.metConcepten !== true)) return null;
   const records = perReis([rij], (r) => r.slug, (r) => naarRecord(r, "strikt"));
-  return (await naarTrips(db, records))[0] ?? null;
+  return (await naarTrips(db, records, opts.leesGedeeldeGalerij))[0] ?? null;
 }
 
 /** De gedeelde homepagegalerij, in volgorde van positie. */
@@ -429,7 +435,11 @@ async function naarBeheerRecords(db: ReisD1, rijen: ReisRij[]): Promise<ReisReco
  * terug op de gedeelde galerij (dan blijft het raster vol); een reis zonder
  * omslagfoto valt weg, want zonder die foto is er geen kaart te tonen.
  */
-async function naarTrips(db: ReisD1, records: ReisRecord[]): Promise<Trip[]> {
+async function naarTrips(
+  db: ReisD1,
+  records: ReisRecord[],
+  leesGedeeld: () => Promise<ImageAsset[]> = () => leesGalerij(db),
+): Promise<Trip[]> {
   if (records.length === 0) return [];
   const fotos = await leesAfbeeldingen(db, records.flatMap(fotoIds));
 
@@ -443,7 +453,7 @@ async function naarTrips(db: ReisD1, records: ReisRecord[]): Promise<Trip[]> {
   }
 
   // Alleen de gedeelde galerij ophalen als een reis hem echt gebruikt.
-  const gedeeld = [...eigenGalerij.values()].includes(null) ? await leesGalerij(db) : [];
+  const gedeeld = [...eigenGalerij.values()].includes(null) ? await leesGedeeld() : [];
 
   return perReis(
     records,

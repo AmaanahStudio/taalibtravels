@@ -27,12 +27,22 @@ function db() {
   return getCloudflareContext().env.DB;
 }
 
+/**
+ * De gedeelde galerij van de homepage; kan minder dan zes foto's tellen.
+ * Ook de reizen zonder eigen galerij lezen hem hierlangs, zodat één verzoek
+ * hem hooguit één keer ophaalt.
+ */
+export const getGallery = cache(async (): Promise<ImageAsset[]> => leesGalerij(db()));
+
 /** Alle publiek zichtbare reizen, op vertrekdatum. */
-export const getTrips = cache(async (): Promise<Trip[]> => leesReizen(db()));
+export const getTrips = cache(
+  async (): Promise<Trip[]> => leesReizen(db(), { leesGedeeldeGalerij: getGallery }),
+);
 
 /** Eén reis op basis van de slug uit de URL; `null` bij een onbekende slug of een concept. */
 export const getTripBySlug = cache(
-  async (slug: string): Promise<Trip | null> => leesReis(db(), slug),
+  async (slug: string): Promise<Trip | null> =>
+    leesReis(db(), slug, { leesGedeeldeGalerij: getGallery }),
 );
 
 /**
@@ -46,6 +56,3 @@ export async function getNextTrip(): Promise<Trip | null> {
 
   return trips.find((trip) => trip.returnDate >= today) ?? trips.at(-1) ?? null;
 }
-
-/** De gedeelde galerij van de homepage; kan minder dan zes foto's tellen. */
-export const getGallery = cache(async (): Promise<ImageAsset[]> => leesGalerij(db()));
