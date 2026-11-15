@@ -99,14 +99,16 @@ export async function routeerAfbeeldingen(
 async function lijst(env: Env): Promise<Response> {
   /*
    * De galerij van een reis is JSON-tekst zonder foreign key, dus `json_each`
-   * zoekt de id erin op. Een reis telt één keer, ook als de foto er zowel omslag
+   * zoekt de id erin op. Een kapotte JSON-waarde (`json_valid`) telt als lege
+   * galerij: `json_each` gooit anders, en dan faalt de hele lijst en elke
+   * verwijdering om één rij. Een reis telt één keer, ook als de foto er zowel omslag
    * als galerijfoto is.
    */
   const { results } = await env.DB.prepare(
     `SELECT a.id, a.r2_sleutel, a.alt, a.width, a.height,
             (SELECT COUNT(*) FROM reizen r
               WHERE r.cover_image = a.id
-                 OR EXISTS (SELECT 1 FROM json_each(r.gallery) j WHERE j.value = a.id))
+                 OR EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(r.gallery) THEN r.gallery ELSE '[]' END) j WHERE j.value = a.id))
           + (SELECT COUNT(*) FROM galerij g WHERE g.afbeelding_id = a.id) AS gebruik
        FROM afbeeldingen a
       ORDER BY a.aangemaakt DESC, a.id
@@ -324,7 +326,7 @@ async function verwijder(id: string, env: Env): Promise<Response> {
     env.DB.prepare(
       `SELECT title FROM reizen
         WHERE cover_image = ?1
-           OR EXISTS (SELECT 1 FROM json_each(reizen.gallery) WHERE value = ?1)
+           OR EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(reizen.gallery) THEN reizen.gallery ELSE '[]' END) WHERE value = ?1)
         ORDER BY departure_date`,
     ).bind(id),
     env.DB.prepare("SELECT 1 FROM galerij WHERE afbeelding_id = ? LIMIT 1").bind(id),
@@ -359,7 +361,7 @@ async function verwijder(id: string, env: Env): Promise<Response> {
         AND NOT EXISTS (
               SELECT 1 FROM reizen
                WHERE cover_image = ?1
-                  OR EXISTS (SELECT 1 FROM json_each(reizen.gallery) WHERE value = ?1))`,
+                  OR EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(reizen.gallery) THEN reizen.gallery ELSE '[]' END) WHERE value = ?1))`,
   )
     .bind(id)
     .run();

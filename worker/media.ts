@@ -39,10 +39,19 @@ export async function serveerMedia(
    * ETag van de browser nog, dan komt er een object zonder body terug en sturen
    * we een 304 — het bestand gaat dan niet opnieuw over de lijn.
    */
-  const object: R2Object | R2ObjectBody | null =
-    request.method === "HEAD"
-      ? await env.MEDIA.head(sleutel)
-      : await env.MEDIA.get(sleutel, { onlyIf: request.headers });
+  let object: R2Object | R2ObjectBody | null;
+  try {
+    object =
+      request.method === "HEAD"
+        ? await env.MEDIA.head(sleutel)
+        : await env.MEDIA.get(sleutel, { onlyIf: request.headers });
+  } catch {
+    console.error("R2-leesfout voor sleutel", sleutel);
+    return new Response("Tijdelijk niet beschikbaar.", {
+      status: 503,
+      headers: { "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
 
   if (!object) return nietGevonden();
 

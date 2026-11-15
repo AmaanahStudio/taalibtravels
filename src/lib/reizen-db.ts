@@ -226,7 +226,16 @@ export async function schrijfReis(
           )
           .bind(...waarden, reis.slug);
 
-  const uitkomst = await statement.run();
+  let uitkomst;
+  try {
+    uitkomst = await statement.run();
+  } catch (fout) {
+    // Een foto kan tussen de controle en de write verwijderd zijn: de foreign key
+    // laat de write dan falen. Controleer opnieuw (geen foutteksten parsen) en geef
+    // dan dezelfde veldfout als vooraf; anders was het iets anders.
+    await controleerAfbeeldingen(db, reis);
+    throw fout;
+  }
 
   if (uitkomst.meta.changes === 0) {
     if (modus === "aanmaken") {
