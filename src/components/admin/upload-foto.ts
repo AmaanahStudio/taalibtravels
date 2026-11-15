@@ -18,6 +18,8 @@ import { ALL_WIDTHS, WEBP_QUALITY } from "@/lib/foto-breedtes";
  */
 const MAX_BRON = 4000;
 
+const ONLEESBAAR = "Dit bestand kan niet als foto gelezen worden. Kies een JPEG, PNG of WebP.";
+
 /** Een foutmelding die zo aan de beheerder getoond kan worden. */
 export class UploadFout extends Error {}
 
@@ -26,6 +28,54 @@ export interface Varianten {
   height: number;
   varianten: Map<number, Blob>;
 }
+
+/* -------------------------------------------------------------------------- */
+/* WebP coderen                                                               */
+/* -------------------------------------------------------------------------- */
+
+let canvasWebp: Promise<boolean> | null = null;
+
+/**
+ * Kan deze browser via canvas WebP coderen? Eén keer getest en onthouden.
+ *
+ * Safari en élke browser op iOS (allemaal WebKit) kunnen dat niet: `toBlob`
+ * met "image/webp" geeft daar stilzwijgend een PNG terug. Het portaal roept
+ * dit al bij het openen aan, zodat de eerste upload niet op de test wacht.
+ */
+export function canvasMaaktWebp(): Promise<boolean> {
+  canvasWebp ??= new Promise((klaar) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 2;
+    canvas.toBlob((blob) => klaar(blob?.type === "image/webp"), "image/webp", 0.5);
+  });
+  return canvasWebp;
+}
+
+type Encoder = (canvas: HTMLCanvasElement) => Promise<Blob | null>;
+
+const viaCanvas: Encoder = (canvas) =>
+  // toBlob wil de kwaliteit als 0–1; WEBP_QUALITY staat in sharp-schaal (0–100).
+  new Promise((klaar) => canvas.toBlob(klaar, "image/webp", WEBP_QUALITY / 100));
+
+/**
+ * Terugval voor WebKit: libwebp als WebAssembly (`@jsquash/webp`, de encoder
+ * van Squoosh), met dezelfde kwaliteit als sharp. De `import()` staat alleen in
+ * dit pad, zodat code en .wasm (~350 KB) nooit geladen worden in een browser die
+ * het zelf kan. De .wasm komt van onze eigen origin: de bundler zet hem bij de
+ * chunks in `_next/static`.
+ */
+const viaWasm: Encoder = async (canvas) => {
+  const { default: encode } = await import("@jsquash/webp/encode");
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+  const buffer = await encode(pixels, { quality: WEBP_QUALITY });
+  return new Blob([buffer], { type: "image/webp" });
+};
+
+/* -------------------------------------------------------------------------- */
+/* Varianten                                                                  */
+/* -------------------------------------------------------------------------- */
 
 /**
  * Maakt van `bestand` een WebP voor elke breedte uit de ladder.
@@ -39,22 +89,33 @@ export interface Varianten {
  */
 export async function maakVarianten(bestand: File): Promise<Varianten> {
   if (typeof createImageBitmap !== "function") {
-    throw new UploadFout("Deze browser kan geen foto's verkleinen. Gebruik een recente Chrome, Edge, Firefox of Safari.");
+    throw new UploadFout("Deze browser kan geen foto's verkleinen. Werk de browser bij en probeer het opnieuw.");
   }
+
+  const encoder = (await canvasMaaktWebp()) ? viaCanvas : viaWasm;
+  const echt = await leesAfmetingen(bestand);
+  const schaal = Math.min(1, MAX_BRON / Math.max(echt.width, echt.height));
+  const width = Math.max(1, Math.round(echt.width * schaal));
+  const height = Math.max(1, Math.round(echt.height * schaal));
 
   let bron: ImageBitmap;
   try {
-    // `from-image` draait een telefoonfoto volgens zijn EXIF-oriëntatie rechtop.
-    bron = await createImageBitmap(bestand, { imageOrientation: "from-image" });
+    /*
+     * Meteen op het afgetopte formaat decoderen: een foto van 48 MP volledig
+     * uitpakken kost bijna 200 MB, en daarop sluit een telefoon de tab.
+     * `from-image` draait een telefoonfoto volgens zijn EXIF-oriëntatie rechtop.
+     */
+    bron = await createImageBitmap(bestand, {
+      imageOrientation: "from-image",
+      resizeWidth: width,
+      resizeHeight: height,
+      resizeQuality: "high",
+    });
   } catch {
-    throw new UploadFout("Dit bestand kan niet als foto gelezen worden. Kies een JPEG, PNG of WebP.");
+    throw new UploadFout(ONLEESBAAR);
   }
 
   try {
-    const schaal = Math.min(1, MAX_BRON / Math.max(bron.width, bron.height));
-    const width = Math.max(1, Math.round(bron.width * schaal));
-    const height = Math.max(1, Math.round(bron.height * schaal));
-
     const varianten = new Map<number, Blob>();
     let vorige: CanvasImageSource = bron;
     let vorigeBreedte = 0;
@@ -68,13 +129,16 @@ export async function maakVarianten(bestand: File): Promise<Varianten> {
         const canvas = document.createElement("canvas");
         canvas.width = doelBreedte;
         canvas.height = doelHoogte;
-        const context = canvas.getContext("2d");
+        // De WASM-terugval leest de pixels terug; dat gaat sneller met deze hint.
+        const context = canvas.getContext("2d", { willReadFrequently: encoder === viaWasm });
         if (!context) throw new UploadFout("De browser kon de foto niet verwerken.");
         context.imageSmoothingEnabled = true;
         context.imageSmoothingQuality = "high";
+        // Met de doelmaat erbij: negeert een browser de resize-opties hierboven,
+        // dan klopt het formaat hier alsnog.
         context.drawImage(vorige, 0, 0, doelBreedte, doelHoogte);
 
-        vorigeBlob = await naarWebp(canvas, breedte);
+        vorigeBlob = await naarWebp(canvas, breedte, encoder);
         vorige = canvas;
         vorigeBreedte = doelBreedte;
       }
@@ -88,20 +152,42 @@ export async function maakVarianten(bestand: File): Promise<Varianten> {
   }
 }
 
-async function naarWebp(canvas: HTMLCanvasElement, breedte: number): Promise<Blob> {
-  const blob = await new Promise<Blob | null>((klaar) =>
-    // toBlob wil de kwaliteit als 0–1; WEBP_QUALITY staat in sharp-schaal.
-    canvas.toBlob(klaar, "image/webp", WEBP_QUALITY / 100),
-  );
+/**
+ * Breedte en hoogte zoals de foto rechtop staat, zonder hem helemaal te
+ * decoderen: een `<img>` kent zijn afmetingen zodra de kop gelezen is, en past
+ * daarbij de EXIF-oriëntatie al toe.
+ */
+function leesAfmetingen(bestand: File): Promise<{ width: number; height: number }> {
+  return new Promise((klaar, mislukt) => {
+    const url = URL.createObjectURL(bestand);
+    const beeld = new Image();
+    beeld.onload = () => {
+      URL.revokeObjectURL(url);
+      klaar({ width: beeld.naturalWidth, height: beeld.naturalHeight });
+    };
+    beeld.onerror = () => {
+      URL.revokeObjectURL(url);
+      mislukt(new UploadFout(ONLEESBAAR));
+    };
+    beeld.src = url;
+  });
+}
 
-  /*
-   * Een browser die geen WebP kan coderen (Safari vóór 14 en andere oude
-   * versies) geeft stilzwijgend een PNG terug. Die zou de Worker weigeren, maar
-   * pas na het uploaden en met een vagere melding — dus hier al stoppen.
-   */
+async function naarWebp(canvas: HTMLCanvasElement, breedte: number, encoder: Encoder): Promise<Blob> {
+  let blob: Blob | null;
+  try {
+    blob = await encoder(canvas);
+  } catch (fout) {
+    // Bv. de .wasm die niet laadt; de beheerder krijgt hieronder een eerlijke melding.
+    console.error("WebP coderen mislukt:", fout);
+    blob = null;
+  }
+
+  // Geen stille PNG of leeg resultaat doorsturen: de Worker zou het weigeren,
+  // maar pas na het uploaden en met een vagere melding.
   if (!blob || blob.type !== "image/webp") {
     throw new UploadFout(
-      "Deze browser kan geen WebP-bestanden maken. Upload de foto met een recente Chrome, Edge of Firefox.",
+      "Deze browser kon de foto niet omzetten naar WebP. Herlaad de pagina en probeer het opnieuw; lukt het dan nog niet, upload de foto dan vanaf een computer.",
     );
   }
   if (blob.size > UPLOAD.maxVariantBytes) {
@@ -111,6 +197,10 @@ async function naarWebp(canvas: HTMLCanvasElement, breedte: number): Promise<Blo
   }
   return blob;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Uploaden                                                                   */
+/* -------------------------------------------------------------------------- */
 
 export type UploadUitkomst =
   | { soort: "klaar"; afbeelding: AfbeeldingRecord }

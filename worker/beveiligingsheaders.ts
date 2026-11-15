@@ -31,19 +31,36 @@
  * uploadformulier van het beheer (`URL.createObjectURL`); dat zijn altijd
  * bestanden die de bezoeker zelf koos. De hero-video valt onder default-src 'self'.
  */
-const CSP = [
-  "default-src 'self'",
-  "base-uri 'none'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
-  "frame-src https://challenges.cloudflare.com",
-  "connect-src 'self' https://challenges.cloudflare.com",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-].join("; ");
+function maakCsp(scriptExtra = ""): string {
+  return [
+    "default-src 'self'",
+    "base-uri 'none'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    `script-src 'self' 'unsafe-inline'${scriptExtra} https://challenges.cloudflare.com`,
+    "frame-src https://challenges.cloudflare.com",
+    "connect-src 'self' https://challenges.cloudflare.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self'",
+  ].join("; ");
+}
+
+const CSP = maakCsp();
+
+/*
+ * Alleen het beheer krijgt `'wasm-unsafe-eval'`: Safari en iOS kunnen via canvas
+ * geen WebP maken, dus daar codeert het uploadformulier met libwebp als
+ * WebAssembly, en dat compileren vraagt deze bron. Het staat geen `eval` van
+ * JavaScript toe, alleen WebAssembly — maar de openbare pagina's laden nooit
+ * WASM, dus daar blijft de deur dicht.
+ *
+ * Niet in `HEADER_REGELS`: /admin is een pagina van de Worker en komt nooit uit
+ * `_headers`. Daar zou hij ook niet werken — Cloudflare voegt bij meerdere
+ * passende regels de waarden samen tot twee CSP's, en de strengste wint.
+ */
+const BEHEER_CSP = maakCsp(" 'wasm-unsafe-eval'");
 
 type HeaderLijst = Readonly<Record<string, string>>;
 
@@ -133,6 +150,7 @@ export function metBeveiligingsheaders(antwoord: Response, pad: string): Respons
     for (const [naam, waarde] of Object.entries(BEHEERHEADERS)) {
       kopie.headers.set(naam, waarde);
     }
+    kopie.headers.set("Content-Security-Policy", BEHEER_CSP);
   }
   return kopie;
 }

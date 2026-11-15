@@ -16,7 +16,7 @@ import {
   type AfbeeldingenAntwoord,
 } from "@/lib/api";
 
-import { maakVarianten, uploadFoto, UploadFout } from "./upload-foto";
+import { canvasMaaktWebp, maakVarianten, uploadFoto, UploadFout } from "./upload-foto";
 
 /**
  * De fotobibliotheek: uploaden (meerdere tegelijk), alt-tekst wijzigen en
@@ -198,6 +198,11 @@ function UploadWachtrij({
   const invoerRef = useRef<HTMLInputElement>(null);
   const teller = useRef(0);
 
+  // Alvast testen of canvas WebP kan coderen; de uitkomst wordt onthouden.
+  useEffect(() => {
+    void canvasMaaktWebp();
+  }, []);
+
   // Voorbeeld-URL's houden het bestand in het geheugen vast tot ze vrijgegeven zijn.
   const itemsRef = useRef(items);
   useEffect(() => {
@@ -268,6 +273,8 @@ function UploadWachtrij({
         );
 
         if (uitkomst.soort === "uitgelogd") {
+          // Niet op "bezig" laten hangen: na opnieuw inloggen moet dit item opnieuw kunnen.
+          wijzig(item.sleutel, { fase: "fout", melding: "Je bent uitgelogd. Log opnieuw in en upload deze foto nog eens." });
           setBezig(false);
           onUitgelogd();
           return;
