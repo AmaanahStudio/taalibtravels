@@ -2,7 +2,7 @@ import path from "node:path";
 
 import type { NextConfig } from "next";
 
-import { DEVICE_SIZES, IMAGE_SIZES } from "./scripts/image-sizes.mjs";
+import { DEVICE_SIZES, IMAGE_SIZES } from "./src/lib/foto-breedtes";
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -19,10 +19,11 @@ const nextConfig: NextConfig = {
     loader: "custom",
     loaderFile: "./src/lib/image-loader.ts",
 
-    // Moeten gelijk blijven aan wat build-images.mjs genereert, anders vraagt de
-    // browser een variant op die niet bestaat.
-    deviceSizes: DEVICE_SIZES,
-    imageSizes: IMAGE_SIZES,
+    // Dezelfde ladder als de varianten die build-images.mjs en de upload maken,
+    // anders vraagt de browser een variant op die niet bestaat. Gekopieerd omdat
+    // Next een gewone (muteerbare) array verwacht.
+    deviceSizes: [...DEVICE_SIZES],
+    imageSizes: [...IMAGE_SIZES],
   },
 
   // Geen `images.remotePatterns`: de beheerde foto's komen uit R2 via `/media/…`
