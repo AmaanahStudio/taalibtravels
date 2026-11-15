@@ -1,6 +1,6 @@
 "use client";
 
-import Image, { type ImageLoader } from "next/image";
+import Image from "next/image";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,14 @@ import { canvasMaaktWebp, maakVarianten, uploadFoto, UploadFout } from "./upload
  * Een 401 wordt niet hier afgehandeld maar doorgegeven via `onUitgelogd`: het
  * inlogscherm is van het paneel eromheen, niet van één tabblad.
  */
-export function FotosBeheer({ onUitgelogd }: { onUitgelogd?: () => void }) {
+export function FotosBeheer({
+  onUitgelogd,
+  onBibliotheekGewijzigd,
+}: {
+  onUitgelogd?: () => void;
+  /** Na een upload of verwijdering, zodat andere keuzelijsten hun foto's opnieuw ophalen. */
+  onBibliotheekGewijzigd?: () => void;
+}) {
   const [status, setStatus] = useState<"laden" | "klaar" | "fout">("laden");
   const [fotos, setFotos] = useState<AfbeeldingMetGebruik[]>([]);
   const [melding, setMelding] = useState<string | null>(null);
@@ -78,9 +85,10 @@ export function FotosBeheer({ onUitgelogd }: { onUitgelogd?: () => void }) {
       </div>
 
       <UploadWachtrij
-        onGeupload={(afbeelding) =>
-          setFotos((vorige) => [{ ...afbeelding, gebruik: 0 }, ...vorige])
-        }
+        onGeupload={(afbeelding) => {
+          setFotos((vorige) => [{ ...afbeelding, gebruik: 0 }, ...vorige]);
+          onBibliotheekGewijzigd?.();
+        }}
         onUitgelogd={uitgelogd}
       />
 
@@ -126,9 +134,10 @@ export function FotosBeheer({ onUitgelogd }: { onUitgelogd?: () => void }) {
                     vorige.map((f) => (f.id === nieuw.id ? { ...f, alt: nieuw.alt } : f)),
                   )
                 }
-                onVerwijderd={() =>
-                  setFotos((vorige) => vorige.filter((f) => f.id !== foto.id))
-                }
+                onVerwijderd={() => {
+                  setFotos((vorige) => vorige.filter((f) => f.id !== foto.id));
+                  onBibliotheekGewijzigd?.();
+                }}
                 onUitgelogd={uitgelogd}
               />
             ))}
@@ -451,12 +460,6 @@ function FotoKaart({
   const [melding, setMelding] = useState<string | null>(null);
   const altVeld = `alt-bewerk-${foto.id}`;
 
-  /*
-   * Elke breedte uit de ladder staat in R2, dus next/image mag de `srcset` gewoon
-   * uit de ingestelde breedtes opbouwen; deze loader wijst ze aan.
-   */
-  const loader: ImageLoader = ({ width }) => `${MEDIA_PAD}${foto.sleutel}/${width}.webp`;
-
   async function bewaar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nieuw = alt.trim();
@@ -514,7 +517,7 @@ function FotoKaart({
     <li className="flex flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-card">
       <div className="relative aspect-[3/2] bg-sunken">
         <Image
-          loader={loader}
+          // Het basispad: de globale loader (`image-loader.ts`) maakt er de varianten van.
           src={`${MEDIA_PAD}${foto.sleutel}`}
           alt={foto.alt}
           fill

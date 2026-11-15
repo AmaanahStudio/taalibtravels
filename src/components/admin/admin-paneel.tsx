@@ -18,6 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 
 import { DeelnemersTabel } from "./deelnemers-tabel";
+import { FotosBeheer } from "./fotos-beheer";
+import { GalerijBeheer } from "./galerij-beheer";
 import { LoginForm } from "./login-form";
 import { ReizenBeheer } from "./reizen-beheer";
 
@@ -77,6 +79,7 @@ type Status = "laden" | "uitgelogd" | "klaar" | "fout";
 const TABBLADEN = [
   { id: "deelnemers", label: "Deelnemers" },
   { id: "reizen", label: "Reizen" },
+  { id: "fotos", label: "Foto's" },
 ] as const;
 
 type TabId = (typeof TABBLADEN)[number]["id"];
@@ -99,8 +102,11 @@ export function AdminPaneel() {
    * inlogscherm: dan staat er nog niets om te bewaren.
    */
   const [sessieVerlopen, setSessieVerlopen] = useState(false);
-  /** Gemeld door het reisformulier; uitloggen gooit die wijzigingen weg. */
+  /** Gemeld door het reisformulier en de galerijkeuze; uitloggen gooit die wijzigingen weg. */
   const [formulierGewijzigd, setFormulierGewijzigd] = useState(false);
+  const [galerijGewijzigd, setGalerijGewijzigd] = useState(false);
+  /** Ophogen bij een upload of verwijdering, zodat de galerijkeuze de bibliotheek ververst. */
+  const [bibliotheekVersie, setBibliotheekVersie] = useState(0);
 
   useEffect(() => {
     let afgebroken = false;
@@ -179,9 +185,9 @@ export function AdminPaneel() {
 
   async function uitloggen() {
     if (
-      formulierGewijzigd &&
+      (formulierGewijzigd || galerijGewijzigd) &&
       !window.confirm(
-        "Het reisformulier heeft niet-opgeslagen wijzigingen. Toch uitloggen?",
+        "Er zijn niet-opgeslagen wijzigingen (reisformulier of homepagegalerij). Toch uitloggen?",
       )
     ) {
       return;
@@ -198,6 +204,7 @@ export function AdminPaneel() {
     setMelding(null);
     setSessieVerlopen(false);
     setFormulierGewijzigd(false);
+    setGalerijGewijzigd(false);
     setStatus("uitgelogd");
   }
 
@@ -255,6 +262,20 @@ export function AdminPaneel() {
             onUitloggen={() => void uitloggen()}
             onFormulierGewijzigd={setFormulierGewijzigd}
           />
+        );
+      case "fotos":
+        return (
+          <div className="flex flex-col gap-12">
+            <FotosBeheer
+              onUitgelogd={() => setSessieVerlopen(true)}
+              onBibliotheekGewijzigd={() => setBibliotheekVersie((vorige) => vorige + 1)}
+            />
+            <GalerijBeheer
+              bibliotheekVersie={bibliotheekVersie}
+              onUitgelogd={() => setSessieVerlopen(true)}
+              onGewijzigd={setGalerijGewijzigd}
+            />
+          </div>
         );
     }
   }
