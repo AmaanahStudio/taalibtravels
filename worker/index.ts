@@ -20,6 +20,7 @@ import {
   wisSessieCookie,
 } from "./auth";
 import { bouwCsv } from "./csv";
+import { routeerReizen } from "./reizen";
 
 /** Bovengrens op het overzicht, zodat één verzoek nooit de hele tabel trekt. */
 const OVERZICHT_LIMIET = 5000;
@@ -117,6 +118,11 @@ async function routeer(
 
   if (pathname.startsWith(`${API.deelnemers}/`) && methode === "DELETE") {
     return verwijder(request, url, env);
+  }
+
+  // Reizen (beheerportaal): routes en Origin-controle staan in reizen.ts.
+  if (pathname === API.reizen || pathname.startsWith(`${API.reizen}/`)) {
+    return routeerReizen(request, url, env);
   }
 
   return json({ ok: false, melding: "Onbekende route." }, 404);
@@ -422,7 +428,7 @@ function beheerNietIngesteld(): Response {
 }
 
 /** JSON-antwoord. Nooit cachen: elk antwoord hier hangt aan één bezoeker. */
-function json(data: unknown, status = 200, cookie?: string): Response {
+export function json(data: unknown, status = 200, cookie?: string): Response {
   const headers = new Headers({
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
@@ -433,7 +439,7 @@ function json(data: unknown, status = 200, cookie?: string): Response {
   return new Response(JSON.stringify(data), { status, headers });
 }
 
-function methodeNietToegestaan(toegestaan: string): Response {
+export function methodeNietToegestaan(toegestaan: string): Response {
   const antwoord = json(
     { ok: false, melding: "Deze methode kan hier niet." },
     405,
@@ -482,7 +488,7 @@ async function binnenLimiet(
   return success;
 }
 
-async function leesJson(
+export async function leesJson(
   request: Request,
 ): Promise<Record<string, unknown> | null> {
   if (!request.headers.get("Content-Type")?.includes("application/json")) {
