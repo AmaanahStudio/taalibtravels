@@ -49,6 +49,14 @@
 			"database_id": "694508d6-d030-40ec-959f-9c0d933eb482"
 		}
 	],
+	// Opslag voor de foto's uit het beheerportaal. `MEDIA` is de naam waarmee de
+	// Worker de bucket aanspreekt (`env.MEDIA`); hernoem die niet zonder de code mee te nemen.
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "taalibtravels-media"
+		}
+	],
 	// Per IP-adres. Turnstile en de unieke index op e-mail zijn de lagen erboven;
 	// dit vangt af dat iemand het formulier of het inlogscherm plat gooit.
 	"ratelimits": [
