@@ -8,9 +8,11 @@
  * zodat de seed exact dezelfde validatie doorloopt als de Worker. Node haalt de
  * typen daarbij zelf weg; er is geen extra dependency voor nodig.
  *
- * Idempotent: R2-objecten worden overschreven met identieke inhoud, rijen gaan
- * erin met `ON CONFLICT DO NOTHING`. Een tweede run verandert dus niets, en wat
- * de beheerder inmiddels in het portaal wijzigde blijft staan.
+ * Herhaalbaar, maar let op het verschil tussen R2 en D1:
+ *  - D1-rijen worden NOOIT overschreven (`ON CONFLICT DO NOTHING`). Een tikfout
+ *    in de JSON herstellen en opnieuw draaien verandert in D1 dus niets; wat de
+ *    beheerder inmiddels in het portaal wijzigde blijft zo ook staan.
+ *  - R2-varianten worden WEL overschreven, elke run opnieuw.
  *
  * Eerst valideren, dan pas schrijven: één foute reis breekt af vóór er iets
  * naar R2 of D1 gaat.
@@ -24,8 +26,16 @@ import { fileURLToPath } from "node:url";
 
 import sharp from "sharp";
 
-import { valideerReis } from "../src/lib/reizen.ts";
 import { ALL_WIDTHS, WEBP_QUALITY } from "./image-sizes.mjs";
+
+// Vóór de import van reizen.ts: op een te oude Node zou die met een cryptische
+// syntaxfout stranden in plaats van met deze melding.
+const [major, minor] = process.versions.node.split(".").map(Number);
+if (major < 22 || (major === 22 && minor < 18)) {
+  console.error(`Dit script vereist Node 22.18 of nieuwer; dit is ${process.versions.node}.`);
+  process.exit(1);
+}
+const { GALERIJ_AANTAL, valideerReis } = await import("../src/lib/reizen.ts");
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = path.join(ROOT, "src", "data");
@@ -33,15 +43,15 @@ const WRANGLER = path.join(ROOT, "node_modules", "wrangler", "bin", "wrangler.js
 const DATABASE = "taalibtravels-leads";
 const BUCKET = "taalibtravels-media";
 
-const modus = process.argv.includes("--remote")
-  ? "--remote"
-  : process.argv.includes("--local")
-    ? "--local"
-    : null;
-if (!modus) {
-  console.error("Gebruik: node scripts/seed-bestaande-content.mjs --local|--remote");
+const lokaal = process.argv.includes("--local");
+const extern = process.argv.includes("--remote");
+if (lokaal === extern) {
+  console.error(
+    "Gebruik: node scripts/seed-bestaande-content.mjs --local|--remote (precies één van de twee)",
+  );
   process.exit(1);
 }
+const modus = extern ? "--remote" : "--local";
 
 const leesJson = async (...delen) =>
   JSON.parse(await fs.readFile(path.join(DATA, ...delen), "utf8"));
@@ -123,7 +133,30 @@ async function main() {
     bekend(reis.coverImage, reis.slug);
     reis.gallery?.forEach((id) => bekend(id, reis.slug));
   }
-  if (galerijIds.length !== 6) throw new Error("gallery.json telt geen zes foto's.");
+  if (galerijIds.length !== GALERIJ_AANTAL) {
+    throw new Error(`gallery.json telt geen ${GALERIJ_AANTAL} foto's.`);
+  }
+  if (new Set(galerijIds).size !== galerijIds.length) {
+    throw new Error("gallery.json bevat dubbele foto-id's.");
+  }
+
+  // Alle bronfoto's controleren vóór de eerste schrijfactie, zodat een kapot
+  // bestand niet halverwege een productie-run alles half laat staan.
+  const kapot = [];
+  for (const [id, foto] of Object.entries(images)) {
+    const bron = path.join(ROOT, "public", foto.src.replace(/^\//, ""));
+    try {
+      await fs.access(bron);
+      await sharp(bron).metadata();
+    } catch {
+      kapot.push(`${id} (${foto.src})`);
+    }
+  }
+  if (kapot.length > 0) {
+    throw new Error(
+      `Deze bronfoto's ontbreken of zijn onleesbaar, er is niets geschreven:\n  ${kapot.join("\n  ")}`,
+    );
+  }
 
   // 2. Varianten genereren en naar R2 uploaden.
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "seed-fotos-"));
