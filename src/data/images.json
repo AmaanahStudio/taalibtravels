@@ -5,21 +5,9 @@
     "width": 1400,
     "height": 933
   },
-  "bibliotheek": {
-    "src": "/images/bibliotheek.jpg",
-    "alt": "Bibliotheek met islamitische werken",
-    "width": 1400,
-    "height": 933
-  },
   "bij-de-berg": {
     "src": "/images/bij-de-berg.jpg",
     "alt": "Deelnemer bij de berg tijdens de ziyarah",
-    "width": 1400,
-    "height": 933
-  },
-  "bij-de-kaaba": {
-    "src": "/images/bij-de-kaaba.jpg",
-    "alt": "Bij de Kaaba in de Masjid al-Haram",
     "width": 1400,
     "height": 933
   },
@@ -38,12 +26,6 @@
   "groep-samen": {
     "src": "/images/groep-samen.jpg",
     "alt": "De groep bij elkaar voor vertrek",
-    "width": 1400,
-    "height": 933
-  },
-  "haram-bovenaf": {
-    "src": "/images/haram-bovenaf.jpg",
-    "alt": "De Masjid al-Haram van bovenaf in de avond",
     "width": 1400,
     "height": 933
   },
@@ -95,12 +77,6 @@
     "width": 1400,
     "height": 933
   },
-  "ornament": {
-    "src": "/images/ornament.jpg",
-    "alt": "Vergulde versiering in de moskee",
-    "width": 1400,
-    "height": 933
-  },
   "quba-zonsondergang": {
     "src": "/images/quba-zonsondergang.jpg",
     "alt": "Bij de Masjid Quba bij zonsondergang",
@@ -122,12 +98,6 @@
   "trip-umrah-comfort": {
     "src": "/images/trip-umrah-comfort.jpg",
     "alt": "Groep deelnemers in ihram in de Masjid al-Haram",
-    "width": 1600,
-    "height": 1067
-  },
-  "trip-umrah-ramadan": {
-    "src": "/images/trip-umrah-ramadan.jpg",
-    "alt": "Zitting met geleerden tijdens het avondprogramma",
     "width": 1600,
     "height": 1067
   },
