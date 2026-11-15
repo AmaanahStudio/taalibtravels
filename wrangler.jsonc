@@ -1,7 +1,7 @@
 {
-	// De site is een statische export (`output: "export"`); Cloudflare serveert
-	// `out/` rechtstreeks van het netwerk. Sinds het inschrijfformulier is er ook
-	// Worker-code, maar die draait uitsluitend op /api/* — zie `run_worker_first`.
+	// OpenNext (`opennextjs-cloudflare build`) serveert alles buiten /api/*:
+	// pagina's, assets en de 404. `worker/index.ts` is de entry en handelt /api/*
+	// zelf eerst af; de rest gaat door naar de OpenNext-handler.
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "taalibtravels",
 	"main": "./worker/index.ts",
