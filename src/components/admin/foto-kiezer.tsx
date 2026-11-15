@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
+import { ScrolVak } from "./scrol-vak";
 import { verplaats, VolgordeKnoppen } from "./volgorde-knoppen";
 
 /**
@@ -57,14 +58,17 @@ function miniatuur(afbeelding: AfbeeldingMetGebruik): string {
 function Miniatuur({
   afbeelding,
   decoratief = false,
+  vasteHoogte = false,
 }: {
   afbeelding: AfbeeldingMetGebruik;
   decoratief?: boolean;
+  /** Vaste hoogte in plaats van 3:2, zodat een rij in het scrolvak een vaste maat heeft. */
+  vasteHoogte?: boolean;
 }) {
   // De rij staat in D1, maar het bestand in R2 kan ontbreken (mislukte upload,
   // los verwijderd). Dan liever dezelfde waarschuwing dan een kapot icoontje.
   const [kapot, setKapot] = useState(false);
-  if (kapot) return <OntbrekendeFoto id={afbeelding.id} />;
+  if (kapot) return <OntbrekendeFoto id={afbeelding.id} vasteHoogte={vasteHoogte} />;
 
   return (
     // Gewone <img>: next/image voegt hier niets toe — de bron ís al de kleine
@@ -77,14 +81,22 @@ function Miniatuur({
       height={Math.round((256 * afbeelding.height) / afbeelding.width) || 171}
       loading="lazy"
       onError={() => setKapot(true)}
-      className="aspect-[3/2] h-auto w-full rounded-xl bg-sunken object-cover"
+      className={cn(
+        "w-full rounded-xl bg-sunken object-cover",
+        vasteHoogte ? "h-20" : "aspect-[3/2] h-auto",
+      )}
     />
   );
 }
 
-function OntbrekendeFoto({ id }: { id: string }) {
+function OntbrekendeFoto({ id, vasteHoogte = false }: { id: string; vasteHoogte?: boolean }) {
   return (
-    <div className="flex aspect-[3/2] items-center justify-center rounded-xl bg-danger-soft px-2 text-center text-xs text-danger">
+    <div
+      className={cn(
+        "flex items-center justify-center rounded-xl bg-danger-soft px-2 text-center text-xs text-danger",
+        vasteHoogte ? "h-20" : "aspect-[3/2]",
+      )}
+    >
       Ontbrekende foto ({id})
     </div>
   );
@@ -111,6 +123,7 @@ export function FotoKiezer({
   // dichtgeklapt, zodat het formulier niet vol miniaturen staat.
   const [open, setOpen] = useState(waarde.length !== max);
   const rasterId = useId();
+  const vakNaamId = `${rasterId}-naam`;
 
   // In een ref, zodat een nieuwe callback van de ouder geen nieuwe fetch start.
   const uitgelogdRef = useRef(onUitgelogd);
@@ -260,9 +273,18 @@ export function FotoKiezer({
                 Je hebt er {max}. Haal er eerst één weg om een andere te kiezen.
               </p>
             )}
-            {/* Scrollt binnen zichzelf: een bibliotheek van honderd foto's zou
-                anders het hele formulier onder zich begraven. */}
-            <ul className="grid max-h-[28rem] grid-cols-2 gap-3 overflow-y-auto rounded-2xl border border-line bg-sunken p-3 sm:grid-cols-3 lg:grid-cols-4">
+            {/* Scrollt binnen zichzelf, met een vaste rijhoogte en hooguit twee rijen
+                zichtbaar: een bibliotheek van honderd foto's zou anders het hele
+                formulier onder zich begraven. De naam staat er onzichtbaar bij; de
+                kiezer zelf is al een groep met `label`. */}
+            <span id={vakNaamId} className="sr-only">
+              {label ? `Fotobibliotheek voor ${label}` : "Fotobibliotheek"}
+            </span>
+            <ScrolVak
+              rijHoogte="9.5rem"
+              labelId={vakNaamId}
+              kolommen="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+            >
               {bibliotheek.afbeeldingen.map((afbeelding) => {
                 const gekozen = waarde.includes(afbeelding.id);
                 return (
@@ -273,13 +295,13 @@ export function FotoKiezer({
                       aria-pressed={gekozen}
                       disabled={vol && !gekozen}
                       className={cn(
-                        "flex w-full flex-col gap-1.5 rounded-2xl border-2 p-1.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                        "flex h-full w-full flex-col gap-1.5 rounded-2xl border-2 p-1.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40",
                         gekozen
                           ? "border-accent bg-accent-soft"
                           : "border-transparent bg-surface hover:border-line-strong",
                       )}
                     >
-                      <Miniatuur afbeelding={afbeelding} decoratief />
+                      <Miniatuur afbeelding={afbeelding} decoratief vasteHoogte />
                       <span className="line-clamp-2 px-1 text-xs text-body">
                         {gekozen && <span className="font-semibold text-accent">Gekozen · </span>}
                         {afbeelding.alt || afbeelding.id}
@@ -288,7 +310,7 @@ export function FotoKiezer({
                   </li>
                 );
               })}
-            </ul>
+            </ScrolVak>
           </>
         )}
       </div>

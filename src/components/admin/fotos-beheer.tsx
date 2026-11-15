@@ -16,6 +16,7 @@ import {
   type AfbeeldingenAntwoord,
 } from "@/lib/api";
 
+import { ScrolVak } from "./scrol-vak";
 import { canvasMaaktWebp, maakVarianten, uploadFoto, UploadFout } from "./upload-foto";
 
 /**
@@ -28,7 +29,10 @@ import { canvasMaaktWebp, maakVarianten, uploadFoto, UploadFout } from "./upload
 export function FotosBeheer({
   onUitgelogd,
   onBibliotheekGewijzigd,
+  versie = 0,
 }: {
+  /** Verandert zodra elders (reis, homepagegalerij) iets is opgeslagen; het gebruik per foto wordt dan opnieuw opgehaald. */
+  versie?: number;
   onUitgelogd?: () => void;
   /** Na een upload of verwijdering, zodat andere keuzelijsten hun foto's opnieuw ophalen. */
   onBibliotheekGewijzigd?: () => void;
@@ -58,15 +62,16 @@ export function FotosBeheer({
         setFotos(uitkomst.fotos);
         setStatus("klaar");
       } else {
+        // Een verversing op de achtergrond die faalt, laat de getoonde lijst staan.
         setMelding(uitkomst.melding);
-        setStatus("fout");
+        setStatus((vorige) => (vorige === "klaar" ? vorige : "fout"));
       }
     });
 
     return () => {
       afgebroken = true;
     };
-  }, [ronde]);
+  }, [ronde, versie]);
 
   function herlaad() {
     setStatus("laden");
@@ -86,21 +91,31 @@ export function FotosBeheer({
 
       <UploadWachtrij
         onGeupload={(afbeelding) => {
-          setFotos((vorige) => [{ ...afbeelding, gebruik: 0 }, ...vorige]);
+          setFotos((vorige) => [{ ...afbeelding, gebruik: 0, gebruikOp: [] }, ...vorige]);
           onBibliotheekGewijzigd?.();
         }}
         onUitgelogd={uitgelogd}
       />
 
       <section aria-labelledby="bibliotheek-titel" className="flex flex-col gap-4">
-        <h3 id="bibliotheek-titel" className="text-lg font-semibold text-heading">
-          Bibliotheek
+        {/* Het aantal staat náást de kop: de kop geeft de sectie en het scrolvak hun naam. */}
+        <div className="flex items-baseline gap-2">
+          <h3 id="bibliotheek-titel" className="text-lg font-semibold text-heading">
+            Bibliotheek
+          </h3>
           {status === "klaar" && (
-            <span className="ml-2 text-sm font-normal text-muted">
+            <span className="text-sm text-muted">
               {fotos.length} {fotos.length === 1 ? "foto" : "foto's"}
             </span>
           )}
-        </h3>
+        </div>
+
+        <p className="text-sm text-muted">
+          Dit zijn alle foto&apos;s die je op de website kunt gebruiken. Upload je hier een
+          foto, dan kies je hem daarna bij een reis (als omslagfoto of in de galerij van de
+          reis) of in de homepagegalerij hieronder. Een foto die nergens op staat kun je veilig
+          verwijderen.
+        </p>
 
         {status === "laden" && (
           <p className="py-12 text-center text-sm text-muted">Bezig met laden…</p>
@@ -124,7 +139,11 @@ export function FotosBeheer({
         )}
 
         {status === "klaar" && fotos.length > 0 && (
-          <ul className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <ScrolVak
+            rijHoogte={KAART_HOOGTE}
+            labelId="bibliotheek-titel"
+            kolommen="grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          >
             {fotos.map((foto) => (
               <FotoKaart
                 key={foto.id}
@@ -141,7 +160,7 @@ export function FotosBeheer({
                 onUitgelogd={uitgelogd}
               />
             ))}
-          </ul>
+          </ScrolVak>
         )}
       </section>
     </div>
@@ -439,6 +458,11 @@ function UploadStatus({ item }: { item: WachtrijItem }) {
   );
 }
 
+/** Vaste rijhoogte van de bibliotheek: zo is "twee rijen" in het scrolvak echt twee rijen. */
+const KAART_HOOGTE = "19rem";
+/** Zoveel plekken tonen we per foto voordat de rest achter "+N meer" gaat. */
+const ZICHTBARE_PLEKKEN = 2;
+
 /* -------------------------------------------------------------------------- */
 /* Eén foto in de bibliotheek                                                 */
 /* -------------------------------------------------------------------------- */
@@ -513,20 +537,28 @@ function FotoKaart({
     }
   }
 
+  const gebruikOp = foto.gebruikOp;
+  const zichtbaar = gebruikOp.slice(0, ZICHTBARE_PLEKKEN);
+  const verborgen = gebruikOp.length - zichtbaar.length;
+
   return (
-    <li className="flex flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-card">
-      <div className="relative aspect-[3/2] bg-sunken">
+    <li className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
+      <div className="relative h-20 shrink-0 bg-sunken">
         <Image
           // Het basispad: de globale loader (`image-loader.ts`) maakt er de varianten van.
           src={`${MEDIA_PAD}${foto.sleutel}`}
           alt={foto.alt}
           fill
-          sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 30vw, (min-width: 420px) 50vw, 100vw"
+          sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 30vw, 50vw"
           className="object-cover"
         />
+        <span className="absolute right-1.5 bottom-1.5 rounded-full bg-surface/90 px-2 py-0.5 text-[10px] leading-4 text-muted">
+          {foto.width} × {foto.height}px
+        </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      {/* Scrolt zelf als een lange melding of het formulier niet past, zodat niets wegvalt. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
         {bewerken ? (
           <form onSubmit={bewaar} noValidate className="flex flex-col gap-3">
             <Field
@@ -558,24 +590,27 @@ function FotoKaart({
             </div>
           </form>
         ) : (
-          <p className="text-sm leading-relaxed text-body">{foto.alt}</p>
+          <p className="line-clamp-2 text-xs leading-4 text-body" title={foto.alt}>
+            {foto.alt}
+          </p>
         )}
 
-        <p className="text-xs text-muted">
-          {foto.width} × {foto.height}px ·{" "}
-          {foto.gebruik === 0
-            ? "niet in gebruik"
-            : `in gebruik op ${foto.gebruik} ${foto.gebruik === 1 ? "plek" : "plekken"}`}
-        </p>
+        {/* Een melding vervangt de gebruiksregel: een mislukt verwijderen noemt de plekken zelf. */}
+        {!bewerken && !melding && (
+          <GebruikRegel zichtbaar={zichtbaar} verborgen={verborgen} alle={gebruikOp} />
+        )}
 
         {melding && (
-          <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-xs leading-relaxed text-danger">
-            {melding}
+          <p role="alert" className="rounded-xl bg-danger-soft px-2.5 py-1.5 text-xs leading-4 text-danger">
+            {melding}{" "}
+            <button type="button" onClick={() => setMelding(null)} className="font-semibold underline">
+              Sluiten
+            </button>
           </p>
         )}
 
         {!bewerken && (
-          <div className="mt-auto flex flex-wrap gap-2">
+          <div className="mt-auto flex flex-wrap gap-1">
             <button
               type="button"
               onClick={() => {
@@ -584,7 +619,7 @@ function FotoKaart({
                 setBewerken(true);
               }}
               disabled={bezig !== null}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold text-heading transition-colors hover:bg-surface-strong disabled:opacity-50"
+              className="rounded-full px-2.5 py-1 text-xs font-semibold text-heading transition-colors hover:bg-surface-strong disabled:opacity-50"
             >
               Alt-tekst wijzigen
             </button>
@@ -592,7 +627,7 @@ function FotoKaart({
               type="button"
               onClick={() => void verwijder()}
               disabled={bezig !== null}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger-soft disabled:opacity-50"
+              className="rounded-full px-2.5 py-1 text-xs font-semibold text-danger transition-colors hover:bg-danger-soft disabled:opacity-50"
             >
               {bezig === "verwijderen" ? "Bezig…" : "Verwijder"}
             </button>
@@ -600,5 +635,44 @@ function FotoKaart({
         )}
       </div>
     </li>
+  );
+}
+
+/** "Niet in gebruik" of de eerste plekken; de rest staat in `title` en voor schermlezers in de tekst. */
+function GebruikRegel({
+  zichtbaar,
+  verborgen,
+  alle,
+}: {
+  zichtbaar: string[];
+  verborgen: number;
+  alle: string[];
+}) {
+  if (alle.length === 0) {
+    return (
+      <p className="rounded-lg bg-accent-soft px-2 py-1 text-xs leading-4 font-semibold text-accent">
+        Niet in gebruik — veilig te verwijderen
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5 text-xs leading-4" title={alle.join("\n")}>
+      <ul className="flex flex-col gap-0.5" aria-label="In gebruik bij">
+        {zichtbaar.map((plek) => (
+          <li key={plek} className="line-clamp-2 text-body">
+            {plek}
+          </li>
+        ))}
+      </ul>
+      {verborgen > 0 && (
+        <p className="text-muted">
+          <span aria-hidden="true">+{verborgen} meer</span>
+          <span className="sr-only">
+            en nog {verborgen}: {alle.slice(zichtbaar.length).join(", ")}
+          </span>
+        </p>
+      )}
+    </div>
   );
 }

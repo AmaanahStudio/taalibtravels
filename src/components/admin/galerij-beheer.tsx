@@ -44,6 +44,7 @@ function gelijk(a: string[], b: string[]): boolean {
 export function GalerijBeheer({
   onUitgelogd,
   onGewijzigd,
+  onOpgeslagen,
   bibliotheekVersie = 0,
 }: {
   /** Verandert na een upload of verwijdering; de keuzelijst haalt dan de bibliotheek opnieuw op. */
@@ -51,6 +52,8 @@ export function GalerijBeheer({
   onUitgelogd?: () => void;
   /** Meldt of er niet-opgeslagen wijzigingen zijn; het paneel vraagt dan bevestiging bij uitloggen. */
   onGewijzigd?: (gewijzigd: boolean) => void;
+  /** Na een geslaagd opslaan: de fotobibliotheek toont dan ander gebruik. */
+  onOpgeslagen?: () => void;
 }) {
   const [laden, setLaden] = useState<Laden>({ soort: "laden" });
   const [opgeslagen, setOpgeslagen] = useState<string[]>([]);
@@ -140,6 +143,7 @@ export function GalerijBeheer({
       setOpgeslagen(data.galerij);
       setKeuze(data.galerij);
       setBewaard(true);
+      onOpgeslagen?.();
     } catch {
       setMelding("Geen verbinding met de server.");
     } finally {

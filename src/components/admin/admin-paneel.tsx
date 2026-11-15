@@ -104,8 +104,13 @@ export function AdminPaneel() {
   /** Gemeld door het reisformulier en de galerijkeuze; uitloggen gooit die wijzigingen weg. */
   const [formulierGewijzigd, setFormulierGewijzigd] = useState(false);
   const [galerijGewijzigd, setGalerijGewijzigd] = useState(false);
-  /** Ophogen bij een upload of verwijdering, zodat de galerijkeuze de bibliotheek ververst. */
+  /**
+   * Ophogen bij een upload of verwijdering, en na het opslaan van een reis of de
+   * homepagegalerij: de keuzelijsten halen de bibliotheek dan opnieuw op en de
+   * fotokaarten tonen weer waar een foto staat.
+   */
   const [bibliotheekVersie, setBibliotheekVersie] = useState(0);
+  const verversBibliotheek = () => setBibliotheekVersie((vorige) => vorige + 1);
 
   useEffect(() => {
     let afgebroken = false;
@@ -260,6 +265,7 @@ export function AdminPaneel() {
             onUitgelogd={() => setSessieVerlopen(true)}
             onUitloggen={() => void uitloggen()}
             onFormulierGewijzigd={setFormulierGewijzigd}
+            onReizenGewijzigd={verversBibliotheek}
           />
         );
       case "fotos":
@@ -267,12 +273,14 @@ export function AdminPaneel() {
           <div className="flex flex-col gap-12">
             <FotosBeheer
               onUitgelogd={() => setSessieVerlopen(true)}
-              onBibliotheekGewijzigd={() => setBibliotheekVersie((vorige) => vorige + 1)}
+              onBibliotheekGewijzigd={verversBibliotheek}
+              versie={bibliotheekVersie}
             />
             <GalerijBeheer
               bibliotheekVersie={bibliotheekVersie}
               onUitgelogd={() => setSessieVerlopen(true)}
               onGewijzigd={setGalerijGewijzigd}
+              onOpgeslagen={verversBibliotheek}
             />
           </div>
         );

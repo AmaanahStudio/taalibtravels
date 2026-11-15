@@ -94,9 +94,12 @@ export interface AfbeeldingRecord {
   height: number;
 }
 
-/** Een foto in het overzicht, met het aantal plekken (reizen en homepagegalerij) waar ze staat. */
+/** Een foto in het overzicht, met de plekken (reizen en homepagegalerij) waar ze staat. */
 export interface AfbeeldingMetGebruik extends AfbeeldingRecord {
+  /** Aantal plekken: altijd `gebruikOp.length`. */
   gebruik: number;
+  /** Leesbaar, bv. "Omslag van Umrah Budget (November 2026)" of "Homepagegalerij". */
+  gebruikOp: string[];
 }
 
 export interface AfbeeldingenAntwoord {

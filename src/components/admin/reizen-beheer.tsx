@@ -70,11 +70,14 @@ export function ReizenBeheer({
   onUitgelogd,
   onUitloggen,
   onFormulierGewijzigd,
+  onReizenGewijzigd,
 }: {
   onUitgelogd: () => void;
   onUitloggen: () => void;
   /** Doorgegeven aan het formulier, zodat het paneel weet of uitloggen iets weggooit. */
   onFormulierGewijzigd?: (gewijzigd: boolean) => void;
+  /** Na opslaan of verwijderen van een reis: de fotobibliotheek toont dan ander gebruik. */
+  onReizenGewijzigd?: () => void;
 }) {
   const [status, setStatus] = useState<"laden" | "klaar" | "fout">("laden");
   const [reizen, setReizen] = useState<ReisRecord[]>([]);
@@ -141,6 +144,7 @@ export function ReizenBeheer({
         tekst: `"${opgeslagen.title} — ${opgeslagen.subtitle}" is opgeslagen.`,
         slug: opgeslagen.status === "draft" ? undefined : opgeslagen.slug,
       });
+      onReizenGewijzigd?.();
     }
     focusOpLijst.current = true;
     onFormulierGewijzigd?.(false);
@@ -207,6 +211,7 @@ export function ReizenBeheer({
         // 404: al weg (bv. in een ander tabblad). Het resultaat is hetzelfde.
         setReizen((vorige) => vorige.filter((r) => r.slug !== reis.slug));
         setSucces({ tekst: `"${reis.title} — ${reis.subtitle}" is verwijderd.` });
+        onReizenGewijzigd?.();
         // De knop waar de focus op stond, is met de rij verdwenen.
         lijstKop.current?.focus();
         return;

@@ -96,31 +96,68 @@ export async function routeerAfbeeldingen(
 /* Bibliotheek                                                                */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * De galerij van een reis is JSON-tekst zonder foreign key, dus `json_each` zoekt
+ * de id erin op. Een kapotte JSON-waarde (`json_valid`) telt als lege galerij:
+ * `json_each` gooit anders, en dan faalt de hele lijst en elke verwijdering om één
+ * rij. `alias` is de naam van de reizentabel in de query eromheen.
+ */
+const reisGalerijJson = (alias: string) =>
+  `CASE WHEN json_valid(${alias}.gallery) THEN ${alias}.gallery ELSE '[]' END`;
+
+/** Hoe de beheerder een reis ziet: titel en ondertitel. */
+const reisNaam = (rij: Record<string, unknown>) => `${rij.title} (${rij.subtitle})`;
+
+/**
+ * Per foto-id de plekken waar ze staat, in leesbare vorm. Zonder gebonden
+ * parameters: er gaat geen invoer van buiten de query in. Omslagen eerst, dan
+ * reisgalerijen (op vertrekdatum), dan de homepagegalerij; een reis telt per soort
+ * één keer, ook als de foto er dubbel in staat.
+ */
+async function gebruikPerFoto(env: Env): Promise<Map<string, string[]>> {
+  const [omslagen, galerijen, homepage] = await env.DB.batch<Record<string, unknown>>([
+    env.DB.prepare(
+      "SELECT cover_image AS id, title, subtitle FROM reizen ORDER BY departure_date, slug",
+    ),
+    env.DB.prepare(
+      `SELECT j.value AS id, r.title, r.subtitle
+         FROM reizen r, json_each(${reisGalerijJson("r")}) j
+        ORDER BY r.departure_date, r.slug`,
+    ),
+    env.DB.prepare("SELECT afbeelding_id AS id FROM galerij ORDER BY positie"),
+  ]);
+
+  const plekken = new Map<string, Set<string>>();
+  const voegToe = (id: unknown, tekst: string) => {
+    if (typeof id !== "string") return;
+    const set = plekken.get(id) ?? new Set<string>();
+    set.add(tekst);
+    plekken.set(id, set);
+  };
+  for (const rij of omslagen.results) voegToe(rij.id, `Omslag van ${reisNaam(rij)}`);
+  for (const rij of galerijen.results) voegToe(rij.id, `Galerij van ${reisNaam(rij)}`);
+  for (const rij of homepage.results) voegToe(rij.id, "Homepagegalerij");
+
+  return new Map([...plekken].map(([id, set]) => [id, [...set]]));
+}
+
 async function lijst(env: Env): Promise<Response> {
-  /*
-   * De galerij van een reis is JSON-tekst zonder foreign key, dus `json_each`
-   * zoekt de id erin op. Een kapotte JSON-waarde (`json_valid`) telt als lege
-   * galerij: `json_each` gooit anders, en dan faalt de hele lijst en elke
-   * verwijdering om één rij. Een reis telt één keer, ook als de foto er zowel omslag
-   * als galerijfoto is.
-   */
-  const { results } = await env.DB.prepare(
-    `SELECT a.id, a.r2_sleutel, a.alt, a.width, a.height,
-            (SELECT COUNT(*) FROM reizen r
-              WHERE r.cover_image = a.id
-                 OR EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(r.gallery) THEN r.gallery ELSE '[]' END) j WHERE j.value = a.id))
-          + (SELECT COUNT(*) FROM galerij g WHERE g.afbeelding_id = a.id) AS gebruik
-       FROM afbeeldingen a
-      ORDER BY a.aangemaakt DESC, a.id
-      LIMIT ?`,
-  )
-    .bind(OVERZICHT_LIMIET)
-    .all<AfbeeldingRij & { gebruik: number }>();
+  const [{ results }, gebruik] = await Promise.all([
+    env.DB.prepare(
+      `SELECT id, r2_sleutel, alt, width, height FROM afbeeldingen
+        ORDER BY aangemaakt DESC, id
+        LIMIT ?`,
+    )
+      .bind(OVERZICHT_LIMIET)
+      .all<AfbeeldingRij>(),
+    gebruikPerFoto(env),
+  ]);
 
   const antwoord: AfbeeldingenAntwoord = {
-    afbeeldingen: results.map(
-      (rij): AfbeeldingMetGebruik => ({ ...naarRecord(rij), gebruik: rij.gebruik }),
-    ),
+    afbeeldingen: results.map((rij): AfbeeldingMetGebruik => {
+      const gebruikOp = gebruik.get(rij.id) ?? [];
+      return { ...naarRecord(rij), gebruik: gebruikOp.length, gebruikOp };
+    }),
   };
   return json(antwoord);
 }
@@ -326,7 +363,7 @@ async function verwijder(id: string, env: Env): Promise<Response> {
     env.DB.prepare(
       `SELECT title FROM reizen
         WHERE cover_image = ?1
-           OR EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(reizen.gallery) THEN reizen.gallery ELSE '[]' END) WHERE value = ?1)
+           OR EXISTS (SELECT 1 FROM json_each(${reisGalerijJson("reizen")}) WHERE value = ?1)
         ORDER BY departure_date`,
     ).bind(id),
     env.DB.prepare("SELECT 1 FROM galerij WHERE afbeelding_id = ? LIMIT 1").bind(id),
@@ -361,7 +398,7 @@ async function verwijder(id: string, env: Env): Promise<Response> {
         AND NOT EXISTS (
               SELECT 1 FROM reizen
                WHERE cover_image = ?1
-                  OR EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(reizen.gallery) THEN reizen.gallery ELSE '[]' END) WHERE value = ?1))`,
+                  OR EXISTS (SELECT 1 FROM json_each(${reisGalerijJson("reizen")}) WHERE value = ?1))`,
   )
     .bind(id)
     .run();
