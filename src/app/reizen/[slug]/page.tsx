@@ -51,7 +51,7 @@ export async function generateMetadata(
   }
 
   const description = `${trip.summary} Vertrek ${formatDateLong(trip.departureDate)} — ${formatPrice(trip.price.amount)} per persoon.`;
-  const cover = trip.coverImage;
+  const og = ogAfbeelding(trip.coverImage);
 
   return {
     title: `${trip.title} — ${trip.subtitle}`,
@@ -62,7 +62,14 @@ export async function generateMetadata(
       title: `${trip.title} | ${SITE.name}`,
       description,
       url: `${SITE.url}/reizen/${trip.slug}`,
-      images: [ogAfbeelding(cover)],
+      images: [og],
+    },
+    // Zonder eigen blok erft de reis het generieke twitter-blok van de layout.
+    twitter: {
+      card: "summary_large_image",
+      title: `${trip.title} | ${SITE.name}`,
+      description,
+      images: [{ url: og.url, alt: og.alt }],
     },
   };
 }

@@ -266,11 +266,15 @@ async function valideerUpload(formulier: FormData): Promise<UploadInvoer> {
   return { ok: true, alt, width, height, varianten, og };
 }
 
-/** Een JPEG begint met FF D8 FF; de browser-opgegeven type bewijst niets, de bytes wel. */
+/**
+ * Een JPEG begint met FF D8 FF en eindigt op FF D9 (canvas en sharp schrijven dat
+ * altijd); een afgekapt bestand valt daarop af. Het opgegeven type bewijst niets, de bytes wel.
+ */
 function isJpeg(bytes: ArrayBuffer): boolean {
-  if (bytes.byteLength < 4) return false;
-  const kop = new Uint8Array(bytes, 0, 3);
-  return kop[0] === 0xff && kop[1] === 0xd8 && kop[2] === 0xff;
+  if (bytes.byteLength < 5) return false;
+  const b = new Uint8Array(bytes);
+  const n = b.length;
+  return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff && b[n - 2] === 0xff && b[n - 1] === 0xd9;
 }
 
 /**
