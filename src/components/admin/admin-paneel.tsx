@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,9 +9,11 @@ import {
   type Deelnemer,
   type DeelnemersAntwoord,
 } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 import { DeelnemersTabel } from "./deelnemers-tabel";
 import { LoginForm } from "./login-form";
+import { ReizenBeheer } from "./reizen-beheer";
 
 /**
  * Het admin-overzicht.
@@ -64,6 +66,14 @@ async function haalDeelnemers(): Promise<Uitkomst> {
 
 type Status = "laden" | "uitgelogd" | "klaar" | "fout";
 
+/** Een tabblad erbij is één regel hier en één `case` in `paneelInhoud`. */
+const TABBLADEN = [
+  { id: "deelnemers", label: "Deelnemers" },
+  { id: "reizen", label: "Reizen" },
+] as const;
+
+type TabId = (typeof TABBLADEN)[number]["id"];
+
 export function AdminPaneel() {
   const [status, setStatus] = useState<Status>("laden");
   const [deelnemers, setDeelnemers] = useState<Deelnemer[]>([]);
@@ -71,6 +81,10 @@ export function AdminPaneel() {
   const [melding, setMelding] = useState<string | null>(null);
   /** Ophogen vraagt een nieuwe ronde aan: na inloggen en bij "opnieuw proberen". */
   const [ronde, setRonde] = useState(0);
+  // Blijft staan over een herlogin heen: wie midden in Reizen uitgelogd raakt,
+  // komt daar na het inloggen weer terug.
+  const [actief, setActief] = useState<TabId>("deelnemers");
+  const tabRefs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
 
   useEffect(() => {
     let afgebroken = false;
@@ -140,6 +154,63 @@ export function AdminPaneel() {
     setStatus("uitgelogd");
   }
 
+  /**
+   * Pijltjestoetsen, Home en End volgens het WAI-ARIA-patroon voor tabs: de
+   * tabrij is één tabstop, met de pijlen kies je binnen de rij. Selecteren
+   * gebeurt meteen bij het verplaatsen — er zijn er maar een paar.
+   */
+  function tabToets(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const laatste = TABBLADEN.length - 1;
+    const naar =
+      event.key === "ArrowRight"
+        ? (index + 1) % TABBLADEN.length
+        : event.key === "ArrowLeft"
+          ? (index - 1 + TABBLADEN.length) % TABBLADEN.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? laatste
+              : null;
+    if (naar === null) return;
+
+    event.preventDefault();
+    const doel = TABBLADEN[naar].id;
+    setActief(doel);
+    tabRefs.current[doel]?.focus();
+  }
+
+  function paneelInhoud(id: TabId): ReactNode {
+    switch (id) {
+      case "deelnemers":
+        return (
+          <>
+            {melding && (
+              <p
+                role="alert"
+                className="mb-6 rounded-2xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger"
+              >
+                {melding}
+              </p>
+            )}
+
+            <DeelnemersTabel
+              deelnemers={deelnemers}
+              totaal={totaal}
+              onVerwijder={verwijder}
+              onUitloggen={() => void uitloggen()}
+            />
+          </>
+        );
+      case "reizen":
+        return (
+          <ReizenBeheer
+            onUitgelogd={() => setStatus("uitgelogd")}
+            onUitloggen={() => void uitloggen()}
+          />
+        );
+    }
+  }
+
   if (status === "laden") {
     return (
       <p className="py-20 text-center text-sm text-muted">Bezig met laden…</p>
@@ -163,21 +234,53 @@ export function AdminPaneel() {
 
   return (
     <>
-      {melding && (
-        <p
-          role="alert"
-          className="mb-6 rounded-2xl border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger"
-        >
-          {melding}
-        </p>
-      )}
+      <div
+        role="tablist"
+        aria-label="Beheer"
+        className="mb-8 flex gap-1 overflow-x-auto border-b border-line"
+      >
+        {TABBLADEN.map((tab, index) => {
+          const gekozen = tab.id === actief;
+          return (
+            <button
+              key={tab.id}
+              ref={(element) => {
+                tabRefs.current[tab.id] = element;
+              }}
+              type="button"
+              role="tab"
+              id={`tab-${tab.id}`}
+              aria-selected={gekozen}
+              aria-controls={`paneel-${tab.id}`}
+              tabIndex={gekozen ? 0 : -1}
+              onClick={() => setActief(tab.id)}
+              onKeyDown={(event) => tabToets(event, index)}
+              className={cn(
+                "-mb-px border-b-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-colors",
+                gekozen
+                  ? "border-accent text-heading"
+                  : "border-transparent text-muted hover:text-heading",
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-      <DeelnemersTabel
-        deelnemers={deelnemers}
-        totaal={totaal}
-        onVerwijder={verwijder}
-        onUitloggen={() => void uitloggen()}
-      />
+      {/* Alle panelen blijven gemonteerd en worden alleen verborgen: wie even
+          naar Deelnemers kijkt, verliest zo geen half ingevuld reisformulier. */}
+      {TABBLADEN.map((tab) => (
+        <div
+          key={tab.id}
+          role="tabpanel"
+          id={`paneel-${tab.id}`}
+          aria-labelledby={`tab-${tab.id}`}
+          hidden={tab.id !== actief}
+        >
+          {paneelInhoud(tab.id)}
+        </div>
+      ))}
     </>
   );
 }
