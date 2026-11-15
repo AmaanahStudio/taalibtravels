@@ -111,14 +111,14 @@ export function TripDetail({ trip }: { trip: Trip }) {
         <PriceBlock trip={trip} className="mt-10" />
       </Section>
 
-      {/* Fotogalerij */}
-      <Section id="fotos" spacing="continue">
-        <SectionHeading
-          eyebrow="BeeldEN"
-          title="Foto's"
-        />
-        <GallerySection images={trip.gallery} featureFirst className="mt-10" />
-      </Section>
+      {/* Fotogalerij. Zonder foto's (een lege gedeelde galerij) liever geen
+          kopje boven een leeg raster. */}
+      {trip.gallery.length > 0 && (
+        <Section id="fotos" spacing="continue">
+          <SectionHeading eyebrow="Beelden" title="Foto's" />
+          <GallerySection images={trip.gallery} featureFirst className="mt-10" />
+        </Section>
+      )}
 
       {/* Afsluitende oproep: wie helemaal doorscrolt hoeft niet terug omhoog. */}
       <Section id="reserveren" spacing="continue">

@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
 
-import { SITE, getTrips } from "@/lib/content";
+import { SITE } from "@/lib/content";
+import { getTrips } from "@/lib/trips";
 
-// Verplicht bij `output: "export"`: zonder deze regel weigert de build een
-// metadata-route te genereren, omdat hij die anders per request zou draaien.
-export const dynamic = "force-static";
+// Per verzoek uit D1, zodat een nieuwe reis meteen in de sitemap staat.
+export const dynamic = "force-dynamic";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: SITE.url, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE.url}/reizen`, changeFrequency: "weekly", priority: 0.9 },
@@ -16,7 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // /admin staat er bewust niet in: dat is geen pagina voor bezoekers.
   ];
 
-  const tripRoutes: MetadataRoute.Sitemap = getTrips().map((trip) => ({
+  const tripRoutes: MetadataRoute.Sitemap = (await getTrips()).map((trip) => ({
     url: `${SITE.url}/reizen/${trip.slug}`,
     lastModified: trip.updatedAt ? new Date(trip.updatedAt) : undefined,
     changeFrequency: "weekly",

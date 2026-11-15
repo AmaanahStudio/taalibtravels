@@ -2,25 +2,33 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { TripDetail } from "@/components/trips/trip-detail";
-import { SITE, getTripBySlug, getTripSlugs } from "@/lib/content";
+import { SITE } from "@/lib/content";
+import imageLoader from "@/lib/image-loader";
+import { getTripBySlug } from "@/lib/trips";
 import { formatDateLong, formatPrice } from "@/lib/utils";
 
-/** Bouwt alle detailpagina's statisch tijdens de build. */
-export function generateStaticParams() {
-  return getTripSlugs().map((slug) => ({ slug }));
-}
+// Leest per verzoek uit D1: een nieuwe of gewijzigde reis staat meteen live, en
+// een onbekende slug of een concept geeft de 404-pagina.
+export const dynamic = "force-dynamic";
+
+/**
+ * Breedte van het deelbeeld (WhatsApp, Facebook). Een vaste variant uit de
+ * ladder, omdat een beheerde foto zonder breedte geen bestand is.
+ */
+const OG_WIDTH = 1080;
 
 export async function generateMetadata(
   props: PageProps<"/reizen/[slug]">,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const trip = getTripBySlug(slug);
+  const trip = await getTripBySlug(slug);
 
   if (!trip) {
     return { title: "Reis niet gevonden" };
   }
 
   const description = `${trip.summary} Vertrek ${formatDateLong(trip.departureDate)} — ${formatPrice(trip.price.amount)} per persoon.`;
+  const cover = trip.coverImage;
 
   return {
     title: `${trip.title} — ${trip.subtitle}`,
@@ -33,10 +41,10 @@ export async function generateMetadata(
       url: `${SITE.url}/reizen/${trip.slug}`,
       images: [
         {
-          url: trip.coverImage.src,
-          width: trip.coverImage.width,
-          height: trip.coverImage.height,
-          alt: trip.coverImage.alt,
+          url: imageLoader({ src: cover.src, width: OG_WIDTH }),
+          width: OG_WIDTH,
+          height: Math.round((cover.height * OG_WIDTH) / cover.width),
+          alt: cover.alt,
         },
       ],
     },
@@ -46,10 +54,8 @@ export async function generateMetadata(
 export default async function TripDetailPage(
   props: PageProps<"/reizen/[slug]">,
 ) {
-  // `params` is in Next.js 16 een Promise; de content zelf komt synchroon uit
-  // het JSON-bestand.
   const { slug } = await props.params;
-  const trip = getTripBySlug(slug);
+  const trip = await getTripBySlug(slug);
 
   if (!trip) {
     notFound();

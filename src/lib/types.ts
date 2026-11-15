@@ -31,7 +31,10 @@ export type IconKey =
  * dezelfde foto bij meerdere reizen hoort.
  */
 export interface ImageAsset {
-  /** Pad onder /public. */
+  /**
+   * Basispad zonder breedte: `/media/fotos/<id>` voor een foto uit het beheer,
+   * of een pad onder /public. De image-loader maakt er een variant van.
+   */
   src: string;
   alt: string;
   width: number;
@@ -77,7 +80,10 @@ export interface Trip {
   price: TripPrice;
   inclusions: TripInclusion[];
   coverImage: ImageAsset;
-  /** Eigen foto's, of de gedeelde fotopool als de reis er geen heeft. Altijd zes. */
+  /**
+   * Eigen foto's (zes), of de gedeelde galerij als de reis er geen heeft. Die
+   * laatste kan minder foto's tellen of leeg zijn; de pagina's vangen dat op.
+   */
   gallery: ImageAsset[];
   audience: TripAudience;
   /**
