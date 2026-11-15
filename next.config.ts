@@ -25,9 +25,9 @@ const nextConfig: NextConfig = {
     imageSizes: IMAGE_SIZES,
   },
 
-  // TODO(backend): zodra foto's van een CDN of uit MongoDB/GridFS komen, voeg
-  // je hier `images.remotePatterns` toe met het toegestane domein. Zolang alles
-  // uit /public komt is er geen extra configuratie nodig.
+  // Geen `images.remotePatterns`: de beheerde foto's komen uit R2 via `/media/…`
+  // op dezelfde origin, en de loader wijst ze zelf aan. Pas bij een extern domein
+  // horen dat domein hier én in de CSP (`img-src`).
 };
 
 export default nextConfig;

@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
  *
  * Reken met zes foto's: met de grote tegel erbij vullen die op desktop precies
  * drie rijen van drie, en op mobiel drie rijen van twee. Een ander aantal laat
- * onderaan een gat achter.
+ * onderaan een gat achter, maar breekt niets: de foto's komen uit D1 en de
+ * gedeelde galerij kan (nog) minder rijen hebben — dan tonen we wat er is.
  */
 export function GallerySection({
   images,
