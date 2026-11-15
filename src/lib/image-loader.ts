@@ -8,7 +8,7 @@
  * 1600px als een desktop. De varianten bestaan al; deze functie wijst ze aan:
  *
  * - beheerde foto's (`/media/fotos/<id>`): het beheer zet elke breedte uit
- *   `scripts/image-sizes.mjs` in R2 als `/media/fotos/<id>/<breedte>.webp`;
+ *   `src/lib/foto-breedtes.ts` in R2 als `/media/fotos/<id>/<breedte>.webp`;
  * - bronfoto's in `public/images`: `scripts/build-images.mjs` maakt ze bij het
  *   bouwen in `public/images/generated`.
  *
