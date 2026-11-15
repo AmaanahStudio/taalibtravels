@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 import { SITE } from "@/lib/content";
 
-// Verplicht bij `output: "export"`: zonder deze regel weigert de build een
-// metadata-route te genereren, omdat hij die anders per request zou draaien.
+// Niets hier hangt van D1 af: bij het bouwen vastzetten is genoeg, dus geen
+// Worker-aanroep per verzoek.
 export const dynamic = "force-static";
 
 export default function robots(): MetadataRoute.Robots {

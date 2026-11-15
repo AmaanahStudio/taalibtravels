@@ -1,10 +1,11 @@
 /**
  * Domeinmodellen voor TaalibTravels.
  *
- * Dit is een statische site zonder backend: alle content staat als JSON in
- * `src/data` en wordt bij het bouwen ingelezen. Deze types beschrijven de vorm
- * van die data nadat `src/lib/content.ts` hem heeft uitgepakt — in de bestanden
- * zelf staan inclusies en foto's als id's, hier als volledige objecten.
+ * Reizen, foto's en de homepagegalerij staan in D1 en R2 (beheerportaal);
+ * de vaste content (site, navigatie, FAQ, giveaway, privacy) staat als JSON in
+ * `src/data`. Deze types beschrijven de vorm nadat `src/lib/trips.ts` en
+ * `src/lib/content.ts` hem hebben uitgepakt — in de opslag staan foto's als id's,
+ * hier als volledige objecten.
  */
 
 /** `draft` verbergt een reis zonder hem uit het JSON-bestand te halen. */
@@ -25,8 +26,8 @@ export type IconKey =
   | "transport";
 
 /**
- * Eén foto. Net als de inclusies staan deze één keer beschreven, in
- * `images.json` met de sleutel als id; reizen en de gedeelde pool verwijzen er
+ * Eén foto. Elke foto staat één keer beschreven, in de tabel `afbeeldingen`
+ * van D1 met de sleutel als id; reizen en de homepagegalerij verwijzen er
  * enkel naar. Zo staat een alt-tekst of afmeting op één plek, ook wanneer
  * dezelfde foto bij meerdere reizen hoort.
  */
@@ -44,9 +45,8 @@ export interface ImageAsset {
 /**
  * Eén regel uit de "Inclusief?"-lijst.
  *
- * In `inclusions.json` staan deze één keer, met de sleutel als id. Een reis
- * verwijst er enkel naar, zodat dezelfde tekst niet bij elke reis herhaald
- * hoeft te worden.
+ * Een reis bewaart zijn inclusies als volledige regels in D1. `inclusions.json`
+ * levert alleen de voorstellen in het reisformulier van het beheerportaal.
  */
 export interface TripInclusion {
   id: string;

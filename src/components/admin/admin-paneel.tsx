@@ -26,10 +26,9 @@ import { ReizenBeheer } from "./reizen-beheer";
 /**
  * Het admin-overzicht.
  *
- * De pagina zelf is statische HTML zonder data erin — alles komt via de
- * geauthenticeerde API binnen. Wie het HTML-bestand opvraagt zonder cookie ziet
- * dus enkel een leeg omhulsel, en dat is precies de bedoeling: bij een statische
- * export staat elk gegenereerd bestand publiek op het netwerk.
+ * De pagina zelf is HTML zonder data erin — alles komt via de
+ * geauthenticeerde API binnen. Wie de pagina opvraagt zonder cookie ziet
+ * dus enkel een leeg omhulsel, en dat is precies de bedoeling.
  *
  * Of je ingelogd bent, wordt niet apart bijgehouden: de sessiecookie is
  * `HttpOnly` en dus onzichtbaar voor JavaScript. Een 401 op het ophalen ís het

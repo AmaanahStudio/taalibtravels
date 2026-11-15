@@ -6,7 +6,7 @@ import { Section } from "@/components/ui/section";
 /*
  * Uit de zoekresultaten houden gebeurt op drie plekken, want één ervan is nooit
  * genoeg: hier voor de crawlers die de meta-tag lezen, in robots.ts voor wie
- * eerst dat bestand ophaalt, en in public/_headers als X-Robots-Tag voor het
+ * eerst dat bestand ophaalt, en in worker/beveiligingsheaders.ts als X-Robots-Tag voor het
  * geval de pagina zelf nooit geparseerd wordt.
  */
 export const metadata: Metadata = {

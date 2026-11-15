@@ -98,8 +98,7 @@ async function main() {
     leesJson("gallery.json"),
     leesJson("inclusions.json"),
   ]);
-  // Direct uit de map: `trips/index.ts` importeert JSON zonder import-attributen,
-  // wat Node niet slikt. Het register is alleen nodig voor de bundler van de site.
+  // Direct uit de map: elk bestand in `trips/` is één reis, er is geen register.
   const tripMap = path.join(DATA, "trips");
   const TRIP_FILES = await Promise.all(
     (await fs.readdir(tripMap))

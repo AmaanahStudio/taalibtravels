@@ -1,5 +1,5 @@
 /**
- * Het contract tussen de statische pagina's en de Worker: welke paden er zijn en
+ * Het contract tussen de pagina's en de Worker: welke paden er zijn en
  * hoe de antwoorden eruitzien. Zowel `worker/index.ts` als de client components
  * importeren dit, zodat een pad maar op één plek staat.
  *
@@ -11,9 +11,9 @@ import type { LeadFouten } from "./leads";
 import type { ReisFouten, ReisInvoer } from "./reizen";
 
 /**
- * Alles onder /api/ gaat naar de Worker; de rest van de site blijft statisch.
- * Dat onderscheid staat ook in wrangler.jsonc onder `run_worker_first`, dus
- * verplaats een route niet buiten dit voorvoegsel zonder die regel mee te nemen.
+ * Alles onder /api/ handelt `worker/index.ts` zelf af; de rest gaat door naar
+ * OpenNext. Dat onderscheid zit in de vroege `startsWith("/api/")`-controle daar,
+ * dus verplaats een route niet buiten dit voorvoegsel zonder die mee te nemen.
  */
 export const API = {
   inschrijven: "/api/deelnemers",

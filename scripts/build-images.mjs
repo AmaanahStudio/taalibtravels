@@ -7,7 +7,7 @@
  *
  * Waarom: de bronfoto's zijn 1400 tot 1600px breed en 100–300 KB per stuk. Een
  * galerijtegel is op een telefoon nog geen 200px breed. Zonder varianten laadt
- * elk toestel de volle resolutie, want een statische export heeft geen
+ * elk toestel de volle resolutie, want er draait geen
  * beeldoptimalisatie op de server.
  *
  * Het script is incrementeel: een variant die al bestaat en nieuwer is dan zijn

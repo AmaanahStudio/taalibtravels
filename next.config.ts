@@ -12,8 +12,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     /*
-     * Eigen loader: de varianten komen uit `scripts/build-images.mjs`, niet uit de
-     * Image Optimization API van Next. Zo krijgt elke foto een `srcset` zonder dat
+     * Eigen loader: de varianten komen uit R2 (`/media/fotos/<id>/<breedte>.webp`) of uit
+     * `scripts/build-images.mjs`, niet uit de Image Optimization API van Next. Zo krijgt elke foto een `srcset` zonder dat
      * er per afbeelding een Worker-aanroep nodig is.
      */
     loader: "custom",
