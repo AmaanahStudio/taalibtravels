@@ -22,6 +22,7 @@ import {
   wisSessieCookie,
 } from "./auth";
 import { bouwCsv } from "./csv";
+import { json, leesJson, methodeNietToegestaan, vanEigenOrigin } from "./http";
 import { routeerReizen } from "./reizen";
 
 /** Bovengrens op het overzicht, zodat één verzoek nooit de hele tabel trekt. */
@@ -438,37 +439,6 @@ function beheerNietIngesteld(): Response {
   return json({ ok: false, melding: "Beheer is nog niet ingesteld." }, 503);
 }
 
-/** JSON-antwoord. Nooit cachen: elk antwoord hier hangt aan één bezoeker. */
-export function json(data: unknown, status = 200, cookie?: string): Response {
-  const headers = new Headers({
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
-  });
-
-  if (cookie) headers.append("Set-Cookie", cookie);
-
-  return new Response(JSON.stringify(data), { status, headers });
-}
-
-export function methodeNietToegestaan(toegestaan: string): Response {
-  const antwoord = json(
-    { ok: false, melding: "Deze methode kan hier niet." },
-    405,
-  );
-  antwoord.headers.set("Allow", toegestaan);
-  return antwoord;
-}
-
-/**
- * `SameSite=Strict` houdt de sessiecookie al weg bij een verzoek dat van een
- * andere site komt. Deze controle is de tweede laag op alles wat schrijft: komt
- * er een Origin mee, dan moet die de onze zijn.
- */
-function vanEigenOrigin(request: Request, url: URL): boolean {
-  const origin = request.headers.get("Origin");
-  return origin === null || origin === url.origin;
-}
-
 function clientIp(request: Request): string {
   return request.headers.get("CF-Connecting-IP") ?? "onbekend";
 }
@@ -497,23 +467,6 @@ async function binnenLimiet(
 
   const { success } = await limiet.limit({ key: sleutel });
   return success;
-}
-
-export async function leesJson(
-  request: Request,
-): Promise<Record<string, unknown> | null> {
-  if (!request.headers.get("Content-Type")?.includes("application/json")) {
-    return null;
-  }
-
-  try {
-    const body: unknown = await request.json();
-    return typeof body === "object" && body !== null
-      ? (body as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
 }
 
 /**

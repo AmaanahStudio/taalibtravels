@@ -15,7 +15,7 @@ import {
   schrijfReis,
   verwijderReis,
 } from "../src/lib/reizen-db";
-import { json, leesJson, methodeNietToegestaan } from "./index";
+import { json, leesJson, methodeNietToegestaan, vanEigenOriginStrikt } from "./http";
 
 const LIJST_METHODEN = "GET, POST";
 const REIS_METHODEN = "GET, PUT, DELETE";
@@ -107,15 +107,6 @@ function slugUitPad(pathname: string): string | null {
   } catch {
     return null;
   }
-}
-
-/**
- * Strenger dan `vanEigenOrigin` in `index.ts`: daar mag de header ontbreken.
- * Elke browser stuurt `Origin` mee bij POST, PUT en DELETE, ook op de eigen site;
- * ontbreekt hij hier, dan komt het verzoek niet uit het portaal.
- */
-function vanEigenOriginStrikt(request: Request, url: URL): boolean {
-  return request.headers.get("Origin") === url.origin;
 }
 
 function veldFouten(fouten: ReisFouten): Response {

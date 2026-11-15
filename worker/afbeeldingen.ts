@@ -20,6 +20,7 @@ import {
   type AfbeeldingenAntwoord,
   type GalerijAntwoord,
 } from "../src/lib/api";
+import { json, leesJson, methodeNietToegestaan, vanEigenOriginStrikt } from "./http";
 import { GALERIJ_AANTAL } from "../src/lib/reizen";
 // Tijdelijk rechtstreeks uit het script: dezelfde ladder als de build-varianten.
 import { ALL_WIDTHS } from "../scripts/image-sizes.mjs";
@@ -63,7 +64,7 @@ export async function routeerAfbeeldingen(
   const isGalerij = pathname === API.galerij;
   if (!isLijst && !isEen && !isGalerij) return null;
 
-  if (methode !== "GET" && !vanEigenOrigin(request, url)) {
+  if (methode !== "GET" && !vanEigenOriginStrikt(request, url)) {
     return json({ ok: false, melding: "Ongeldig verzoek." }, 403);
   }
 
@@ -485,42 +486,4 @@ function opsomming(delen: string[]): string {
   return delen.length <= 1
     ? delen.join("")
     : `${delen.slice(0, -1).join(", ")} en ${delen[delen.length - 1]}`;
-}
-
-/*
- * Strenger dan de controle in `index.ts`: daar mag een verzoek zonder Origin
- * nog door. Een browser stuurt hem bij elke fetch die schrijft altijd mee, dus
- * wie hem hier weglaat, is geen pagina van ons.
- */
-function vanEigenOrigin(request: Request, url: URL): boolean {
-  return request.headers.get("Origin") === url.origin;
-}
-
-async function leesJson(request: Request): Promise<Record<string, unknown> | null> {
-  if (!request.headers.get("Content-Type")?.includes("application/json")) return null;
-  try {
-    const body: unknown = await request.json();
-    return typeof body === "object" && body !== null && !Array.isArray(body)
-      ? (body as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-/** JSON-antwoord. Nooit cachen: elk antwoord hier hangt aan één beheerder. */
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-    },
-  });
-}
-
-function methodeNietToegestaan(toegestaan: string): Response {
-  const antwoord = json({ ok: false, melding: "Deze methode kan hier niet." }, 405);
-  antwoord.headers.set("Allow", toegestaan);
-  return antwoord;
 }
