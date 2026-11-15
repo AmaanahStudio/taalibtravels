@@ -2,11 +2,15 @@
   "name": "taalibtravels",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "dev": "npm run images && next dev",
     "prebuild": "npm run images",
     "build": "next build",
     "images": "node scripts/build-images.mjs",
+    "seed": "node scripts/seed-bestaande-content.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit && tsc --noEmit -p worker",
