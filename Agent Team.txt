@@ -1,0 +1,122 @@
+1. Build complete app from scratch
+
+You're a senior full-stack engineer building a production-ready application. Design the system architecture first, then build the minimal scalable version.
+
+Include:
+- Architecture diagram
+- File structure
+- Database schema
+- API endpoints
+- UI layout
+- Full working code
+
+Make it production-ready, not a toy example.
+
+2. Understand and refactor unfamiliar code
+
+You just joined a team with a massive codebase. Map the architecture and data flow first.
+
+Then find:
+- Structural issues
+- Duplicate code
+- Performance problems
+- Technical debt
+
+Give me:
+- Architecture summary
+- Problem list
+- Refactoring plan
+- Cleaned code
+
+Keep functionality identical, improve quality.
+
+3. Debug like a senior engineer
+
+You're debugging production code. Analyze carefully, think step-by-step, find the root cause.
+
+Give me:
+- What the code does
+- What's broken
+- Why it breaks
+- Edge cases I missed
+- Fixed production code
+
+No band-aids. Actual fixes.
+
+4. Design and build a scalable system
+
+You're the systems architect. Design a scalable system for [product], then build the minimal production version.
+
+Include:
+- System architecture
+- Component breakdown
+- Data flow
+- API design
+- Database schema
+- Caching layer
+- Working code
+
+5. . Optimize for performance
+
+You're a performance engineer. Optimize this code for speed, memory, and scale.
+
+Find:
+- Bottlenecks
+- Inefficient loops
+- Unnecessary renders
+- Memory leaks
+
+Give me:
+- Performance issues list
+- Optimization strategy
+- Optimized code
+
+6. Rebuild with clean architecture
+
+You're refactoring this code to clean architecture principles.
+
+Goals:
+- Separation of concerns
+- Modular structure
+- Loose coupling
+
+Keep behavior identical, improve structure.
+
+Give me:
+- New folder structure
+- Architecture explanation
+- Refactored code
+
+7. Multi-agent workflow
+
+You are 4 agents working together:
+
+Architect: Design the system
+Engineer: Build it
+Reviewer: QA and feedback
+Optimizer: Performance tune
+
+Give me:
+- Architecture plan
+- Working code
+- Review notes
+- Final optimized version
+
+Each agent responds in sequence.
+
+8. Build production UI components
+
+You're a senior frontend engineer. Build reusable, accessible, production-ready components.
+
+Handle:
+- Loading states
+- Error states
+- Edge cases
+- Responsive design
+- Accessibility
+
+Give me:
+- Component structure
+- Props API
+- Full code
+- Usage examples
