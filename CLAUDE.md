@@ -8,84 +8,141 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Command             | Doet                                                    |
 | ------------------- | ------------------------------------------------------- |
-| `npm run dev`       | Dev server op http://localhost:3000 — **zonder `/api`** |
-| `npm run preview`   | `next build && wrangler dev` — de enige manier om `/api` lokaal te draaien |
-| `npm run build`     | Productiebuild                                          |
-| `npm run deploy`    | `next build && wrangler deploy`                         |
-| `npm run start`     | Productieserver (na build)                              |
+| `npm run dev`       | Dev server op http://localhost:3000 — **zonder `/api`, `/media` en D1** |
+| `npm run preview`   | `opennextjs-cloudflare build && wrangler dev` — de enige manier om `/api`, `/media` en de D1-pagina's lokaal te draaien |
+| `npm run build`     | `next build` (draait eerst `prebuild`: `images` + `headers`) |
+| `npm run deploy`    | `opennextjs-cloudflare build && wrangler deploy`        |
+| `npm run start`     | Productieserver (na build); kent D1 niet, gebruik `preview` |
 | `npm run lint`      | ESLint                                                  |
 | `npm run typecheck` | `tsc --noEmit` voor de site **en** voor `worker/`        |
 | `npm run typegen`   | Genereert de `PageProps`/`LayoutProps` route-types      |
 | `npm run cf-typegen`| Genereert `Env` uit de bindings in `wrangler.jsonc`     |
-| `npm run images`    | Genereert de WebP-varianten in `public/images/generated` |
+| `npm run seed -- --local` | Zet de JSON-reizen en `public/images` over naar lokale D1 en R2 (zie [Overgangsfase](#overgangsfase-seed-bronbestanden)) |
+| `npm run images`    | Genereert WebP-varianten van de bronfoto's uit `images.json` in `public/images/generated` |
+| `npm run headers`   | Schrijft `public/_headers` uit `worker/beveiligingsheaders.ts` |
 | `npm run hero-video`| Bouwt `public/videos/hero-compilatie.mp4` + poster-frame |
 | `npm run hero-video:web` | Leidt daaruit de WebM en het WebP-poster af        |
 
-`npm run typecheck` faalt op een verse clone tot twee gegenereerde bestanden bestaan —
-draai eerst `npm run typegen` (of `dev`/`build`) én `npm run cf-typegen`.
+Node **>= 22.18** is vereist (`engines`): het seed-script en de build-scripts laden
+`.ts`-bestanden (`foto-breedtes.ts`, `reizen.ts`, `beveiligingsheaders.ts`) rechtstreeks
+via type stripping.
 
-Er is **geen testrunner en geen testsuite**. `lint` + `typecheck` + een build zijn de
-volledige verificatie; `npm run build` is de scherpste check, omdat de contentvalidatie
-in [content.ts](src/lib/content.ts) pas bij het bundelen draait.
+`npm run typecheck` faalt op een verse clone tot de gegenereerde bestanden bestaan:
+draai eerst `npm run typegen` (of `dev`/`build`) én `npm run cf-typegen`. Kopieer ook
+`.dev.vars.example` naar `.dev.vars` (staat in `.gitignore`): `wrangler types` leest daar
+de namen van de secrets uit en `wrangler dev` de waarden. Voor `npm run preview` moet
+bovendien de lokale D1 bestaan (`worker/schema.sql` en `worker/migraties/*` toepassen met
+`wrangler d1 execute taalibtravels-leads --local --file=…`), en `preview` bouwt eerst
+`.open-next/`, dat de Worker importeert.
+
+Er is **geen testrunner en geen testsuite**. `lint` + `typecheck` +
+`npx opennextjs-cloudflare build` zijn de volledige verificatie; die laatste is de
+scherpste check, omdat hij de productiebundel bouwt die ook echt draait.
+
+**Windows:** een gestopte `wrangler dev` laat soms een `workerd`-proces achter dat
+`.open-next/assets` vergrendelt; de volgende OpenNext-build faalt dan met `EBUSY`.
+Stop die processen eerst en bouw dan opnieuw.
 
 ## Architectuur
 
-Elke pagina is statisch (`output: "export"`) en wordt door Cloudflare rechtstreeks van
-het netwerk geserveerd. De **enige** servercode staat in `worker/` en draait uitsluitend
-op `/api/*` — zie [Giveaway](#giveaway-inschrijvingen-worker--d1) onderaan. Raakt een
-wijziging aan de rest van de site, dan is er dus nog steeds geen backend in het spel.
+De site draait als **OpenNext op Cloudflare Workers** (`@opennextjs/cloudflare`, exact
+vastgepind op de versie die bij Next 16.2 en wrangler 4.121 past — upgrade Next en
+wrangler samen met hem). Er is geen `output: "export"` meer: pagina's worden per
+verzoek gerenderd en lezen reizen en foto's uit **D1**; de foto-bestanden staan in **R2**.
+Wat in het beheerportaal verandert, is dus direct live, zonder build of deploy.
 
-### Content is data, geen code
+`worker/index.ts` is de `main` van de Worker en handelt een verzoek in deze volgorde af:
 
-**Alle** teksten, reizen, prijzen en bedrijfsgegevens staan als JSON in
-[src/data](src/data), opgesplitst per onderwerp. Content wijzigen hoort nul componenten
-te raken. [src/lib/content.ts](src/lib/content.ts) is de enige module die die bestanden
-kent; [src/lib/types.ts](src/lib/types.ts) beschrijft de vorm ná het uitpakken.
+1. `/media/*` → `worker/media.ts` serveert een foto uit R2 (publiek, geen sessie);
+2. `/api/*` → de API-handlers (giveaway, login, beheer), achter de sessiepoort waar nodig;
+3. al het andere → `openNext.fetch(…)` uit `.open-next/worker.js` (pagina's en 404);
+4. op elk antwoord dat zo ontstaat zet `metBeveiligingsheaders` de beveiligingsheaders.
 
-| Bestand                 | Bevat                                                    |
-| ----------------------- | -------------------------------------------------------- |
-| `site.json`             | Naam, tagline, WhatsApp, e-mail, Instagram, domein        |
-| `navigation.json`       | De links in navigatiebalk en footer                       |
-| `inclusions.json`       | De "Inclusief?"-regels, per id                            |
-| `images.json`           | Elke foto één keer: `src`, `alt`, `width`, `height`, per id |
-| `gallery.json`          | Gedeelde fotopool — een lijst foto-id's                   |
-| `faq.json`              | Veelgestelde vragen                                       |
-| `giveaway.json`         | Copy en einddatum van de giveaway + Turnstile site key     |
-| `privacy.json`          | Tekst van de privacyverklaring                            |
-| `trips/<slug>.json`     | Eén bestand per reis                                      |
-| `trips/index.ts`        | Register: welke reisbestanden bestaan                     |
+Statische bestanden (`/_next/static`, `public/`) serveert Cloudflare rechtstreeks uit
+`.open-next/assets` (binding `ASSETS`), zonder de Worker; hun headers komen uit
+`public/_headers` (zie [Headers](#headers)).
 
-Twee dingen staan bewust één keer beschreven en worden elders alleen met een **id**
-aangeroepen: de inclusies en de foto's. Een reis heeft dus `"coverImage": "trip-umrah-budget"`
-en `"gallery": ["les-pilaren", …]`, geen ingesloten objecten. Een alt-tekst of afmeting
-corrigeer je daardoor op één plek.
+### Content: JSON voor het vaste, D1 + R2 voor het beheerde
 
-Bij het importeren van `content.ts` wordt de `TRIPS`-array één keer op module-niveau
-opgebouwd — drafts eruit, id's opgezocht, gesorteerd op `departureDate`. Gevolgen om te
-kennen:
+| Waar | Wat |
+| ---- | --- |
+| D1 `reizen`, `afbeeldingen`, `galerij` | Alle reizen, foto's en de homepagegalerij — bewerkt in het beheerportaal |
+| R2 (`MEDIA`) | De foto-bestanden: `fotos/<id>/<breedte>.webp` en `fotos/<id>/og.jpg` |
+| `src/data/{site,navigation,faq,giveaway,privacy}.json` | Wat vast blijft |
+| `src/data/inclusions.json` | Alleen nog de **voorstellen** in het reisformulier; een reis bewaart zijn eigen inclusies |
 
-- Een verwijzing naar een niet-bestaande `inclusion`- of foto-id **gooit tijdens de build**
-  (`resolveInclusions`, `resolveImage`), bewust geen stille lege lijst. Datzelfde geldt voor
-  een galerij die geen zes foto's telt en twee reizen met dezelfde slug
-  (`resolveGallery`, `assertTripsConsistent`).
-- `inclusions.json` en de reisbestanden worden gecast met `as unknown as`; TypeScript leest
-  uit JSON alleen brede types (`"EUR"` wordt `string`). De typecheck bewaakt die vorm dus
-  niet — de resolvers hierboven doen dat wel, bij de build.
-- `status: "draft"` verbergt een reis, een reis zonder eigen `gallery` valt terug op de
-  gedeelde pool. Drafts worden er vóór het uitpakken uitgefilterd, dus een half afgewerkte
-  reis breekt de build niet.
-- De homepage-hero is niet instelbaar: `getNextTrip` pakt de eerste reis die op dat moment
-  nog niet terug is, en vult daarmee titel, samenvatting, datum en prijs. De pagina wordt
-  statisch gebouwd, dus "dat moment" is de build — na een verstreken reis is een redeploy
-  nodig voordat de hero opschuift.
-- Een reis toevoegen: bestand aanmaken onder `trips/`, plus één import en één regel in
-  `trips/index.ts`. Dat register staat er expliciet omdat `content.ts` ook in een client
-  component belandt (de navbar) — de map uitlezen met `fs` kan dus niet.
+Vaste teksten wijzig je nog steeds in JSON zonder een component aan te raken. Reizen en
+foto's wijzig je in het portaal, nooit in de code.
 
-Consumeer content via de functies uit `content.ts` (`getTrips`, `getTripBySlug`,
-`getNextTrip`, `getTripSlugs`, `getGallery`) en de constanten
-`SITE` / `NAV_LINKS` / `FAQ` — importeer nooit een bestand uit `src/data` rechtstreeks in
-een component.
+Twee modules, bewust gescheiden:
+
+- [src/lib/content.ts](src/lib/content.ts) bevat alleen de **vaste** JSON (`SITE`,
+  `NAV_LINKS`, `FAQ`, `GIVEAWAY`, `PRIVACY`) en is synchroon. Het bestand belandt via de
+  navbar en `utils.ts` in de **browserbundel**; een D1-lezer erin sleept servercode mee.
+  Daarom staan de lezers daar niet.
+- [src/lib/trips.ts](src/lib/trips.ts) is `server-only` en levert de lezers: `getTrips`,
+  `getTripBySlug`, `getNextTrip`, `getGallery`. Ze lezen `env.DB` per verzoek en zijn per
+  verzoek ontdubbeld met `cache()`. De query's zelf staan in `src/lib/reizen-db.ts`.
+
+Importeer nooit een bestand uit `src/data` rechtstreeks in een component, en importeer
+`trips.ts` nooit vanuit een client component (de build breekt dan, bedoeld).
+
+- **Pagina's die D1 lezen zijn `export const dynamic = "force-dynamic"`.** Er is geen
+  incrementele cache geconfigureerd: een vooraf gerenderde pagina zou tot de volgende
+  deploy blijven staan, met `s-maxage=31536000`. Dat geldt voor `/`, `/reizen`,
+  `/reizen/[slug]` en `sitemap.ts`; een nieuwe pagina die `trips.ts` aanroept krijgt
+  dezelfde regel. Pagina's zonder D1 (`/giveaway`, `/contact`, `/privacy`, `robots.ts`)
+  blijven vooraf gerenderd.
+- `src/app/error.tsx` vangt een pagina die niet rendert (in de praktijk: D1 onbereikbaar)
+  en toont een nette foutpagina met een WhatsApp-uitweg.
+- Eén kapotte reisrij (onleesbare JSON-kolom, verdwenen foto) legt de lijst niet plat:
+  `reizen-db.ts` slaat hem over in de publieke lezers; alleen het beheer (`strikt`)
+  krijgt de fout te zien.
+- De homepage-hero is niet instelbaar: `getNextTrip` pakt de eerste reis die nog niet
+  terug is — nu per verzoek, dus de hero schuift vanzelf op. Zijn alle reizen geweest,
+  dan blijft de laatste staan.
+- `status: "draft"` verbergt een reis publiek (404 op de detailpagina, weg uit lijst en
+  sitemap); het beheer ziet hem wel.
+- `src/cloudflare-env.d.ts` breidt de globale `CloudflareEnv` uit met `DB`. Het
+  root-tsconfig sluit het gegenereerde `worker-configuration.d.ts` uit, zodat
+  workerd-globals de DOM-types niet vervuilen.
+
+### Beheerportaal (`/admin`)
+
+Drie tabs: Deelnemers, Reizen, Foto's (de homepagegalerij zit bij Foto's). Regels die de
+code afdwingt en die je niet moet "verzachten":
+
+- **De slug staat vast** na het aanmaken: hij is de URL, wijzigen breekt links. `PUT`
+  weigert een body waarvan de slug van het pad afwijkt.
+- **Een foto die in gebruik is, wordt niet verwijderd** (omslag of galerij van een reis, of
+  de homepagegalerij): de API geeft 409 met de titels. Er wordt nooit stilzwijgend ergens
+  weggehaald.
+- **Een galerij heeft exact zes foto's**, per reis en voor de homepage (`valideerReis`,
+  `PUT /api/admin/galerij`). Een reis zonder eigen `gallery` valt terug op de
+  homepagegalerij.
+- De browser valideert vroeg, **de Worker oordeelt** (`valideerReis` in
+  `src/lib/reizen.ts`). Een reis schrijven controleert expliciet dat omslag- en
+  galerij-id's bestaan, niet door een D1-foutmelding te lezen.
+- **Twee Origin-controles.** De nieuwe schrijfroutes (reizen, afbeeldingen, galerij) eisen
+  een `Origin`-header gelijk aan de eigen origin (`vanEigenOriginStrikt`; ontbreekt hij,
+  dan 403). De oude routes (login, giveaway, deelnemers) gebruiken de soepele
+  `vanEigenOrigin`, die een ontbrekende header toelaat. Maak de oude niet strikter zonder
+  de gevolgen te kennen, en de nieuwe niet soepeler. Curl-tests tegen de nieuwe routes
+  hebben dus altijd een `Origin` nodig.
+- Een upload bevat precies de breedtes uit `ALL_WIDTHS` (WebP, ≤ 1 MB per stuk, RIFF/WEBP-magic
+  gecontroleerd) plus één `og.jpg`. De id wordt server-side gegenereerd; niets van de
+  client wordt een R2-sleutel. `/media` serveert alleen sleutels die op `fotos/<id>/…`
+  passen. Gaat een upload halverwege fout, dan wordt het al geschrevene opgeruimd.
+
+### Overgangsfase: seed-bronbestanden
+
+`npm run seed` (`scripts/seed-bestaande-content.mjs`) zet de oorspronkelijke JSON en
+foto's eenmalig over naar D1 en R2, met dezelfde validatie als de Worker. Het leest nog
+`src/data/trips/*.json`, `src/data/gallery.json`, `src/data/images.json` en
+`public/images/*`. Dat zijn **seed-bronbestanden**: de site zelf leest ze niet meer. Ze
+blijven staan tot de productie-seed is gedraaid en gecontroleerd; daarna worden ze samen
+met het script verwijderd (zie het plan, Task 9b). Wijzig ze niet meer: een D1-rij wordt
+door de seed nooit overschreven.
 
 ### Thema's en design tokens
 
@@ -151,42 +208,56 @@ met voorgevuld bericht; het nummer staat één keer in `site.json` onder `whatsa
 
 `params` is een Promise: `const { slug } = await props.params`. Route-props typen met de
 gegenereerde globals — `PageProps<"/reizen/[slug]">` — niet met een handgeschreven
-interface. `generateStaticParams` in [reizen/[slug]/page.tsx](src/app/reizen/[slug]/page.tsx)
-bouwt elke detailpagina statisch. `next.config.ts` pint de Turbopack-root, omdat er ook
+interface. `next.config.ts` pint de Turbopack-root, omdat er ook
 een `package-lock.json` in de home-directory staat.
 
-### Giveaway-inschrijvingen: Worker + D1
+### Worker + D1 + R2
 
-De enige servercode van het project. Deelnemers vullen `/giveaway` in, de beheerder
-bekijkt ze op `/admin`; daartussen zit `worker/` met een D1-tabel `deelnemers`.
+De servercode van het project: de giveaway-inschrijving, het beheerportaal en `/media`.
+Deelnemers vullen `/giveaway` in, de beheerder werkt op `/admin`; daartussen zit
+`worker/` met D1 (`deelnemers`, `reizen`, `afbeeldingen`, `galerij`) en R2 (de foto's).
 
 | Bestand | Doet |
 | ------- | ---- |
-| `worker/index.ts` | Router en handlers voor `/api/*` |
+| `worker/index.ts` | Entry: volgorde /media, /api, OpenNext, headers; router voor giveaway, login en deelnemers |
+| `worker/reizen.ts` | `/api/admin/reizen` (lijst, aanmaken, lezen, wijzigen, verwijderen) |
+| `worker/afbeeldingen.ts` | `/api/admin/afbeeldingen` (upload, alt-tekst, verwijderen) en `/api/admin/galerij` |
+| `worker/media.ts` | `/media/fotos/…` uit R2, met `ETag` en `immutable` |
+| `worker/http.ts` | Gedeelde antwoordhelpers: `json`, `leesJson`, `methodeNietToegestaan`, beide Origin-controles |
+| `worker/beveiligingsheaders.ts` | De ene definitie van alle headers; zie [Headers](#headers) |
 | `worker/auth.ts` | Sessiecookie (HMAC), inlogvergelijking in constante tijd |
 | `worker/csv.ts` | CSV-export |
-| `worker/schema.sql` | De tabel; opnieuw draaien mag (`IF NOT EXISTS`) |
-| `worker/migraties/` | Genummerde wijzigingen op een database die al bestaat |
-| `src/lib/leads.ts` | Validatieregels, **gedeeld** met het formulier |
+| `worker/schema.sql` | De tabellen; opnieuw draaien mag (`IF NOT EXISTS`) |
+| `worker/migraties/` | Genummerde wijzigingen op een database die al bestaat (`002` maakt `reizen`, `afbeeldingen`, `galerij`) |
+| `worker/open-next.d.ts` | Typedeclaratie voor `../.open-next/worker.js`, dat pas na een OpenNext-build bestaat |
+| `src/lib/leads.ts` | Validatieregels van de inschrijving, **gedeeld** met het formulier |
+| `src/lib/reizen.ts` | Validatie en vorm van een reis (`valideerReis`, `ReisInvoer`), gedeeld met het portaal en het seed-script |
+| `src/lib/reizen-db.ts` | D1-query's voor reizen, foto's en galerij; gebruikt door de Worker én door `trips.ts` |
+| `src/lib/foto-breedtes.ts` | De breedteladder en de `og`-maten, gedeeld met Next, de browser, de Worker en de scripts |
 | `src/lib/api.ts` | API-paden en antwoordtypes, idem |
 
 Wat je moet weten voordat je hier iets wijzigt:
 
-- **`leads.ts` en `api.ts` mogen het `@/*`-alias niet gebruiken.** Wrangler bundelt de
-  Worker met esbuild en past de `paths` uit `tsconfig.json` daarbij niet toe; een
-  alias-import breekt de Worker-build. Onderling importeren ze relatief (`./leads`).
+- **`leads.ts`, `api.ts`, `reizen.ts`, `reizen-db.ts` en `foto-breedtes.ts` mogen het
+  `@/*`-alias niet gebruiken.** Wrangler bundelt de Worker met esbuild en past de `paths`
+  uit `tsconfig.json` daarbij niet toe; een alias-import breekt de Worker-build. Onderling
+  importeren ze relatief (`./leads`). `foto-breedtes.ts` en `reizen.ts` hebben bovendien
+  geen imports en alleen wegstripbare typen: Node laadt ze rechtstreeks (scripts).
 - De browser valideert voor het gemak, **de Worker oordeelt**. Voeg je een veld toe, doe
-  dat dan in `leads.ts` — dan volgen formulier en server vanzelf.
+  dat dan in `leads.ts` of `reizen.ts` — dan volgen formulier en server vanzelf.
 - `worker/` staat in de `exclude` van de root-`tsconfig.json` en heeft een eigen
   `worker/tsconfig.json`: die code draait op workerd en heeft geen DOM. `npm run typecheck`
   draait allebei. Het `Env`-type komt uit `npm run cf-typegen` en is dus gegenereerd —
   na een wijziging in `wrangler.jsonc` opnieuw draaien.
-- `run_worker_first: ["/api/*"]` in `wrangler.jsonc` is niet optioneel. Zonder die regel
-  wint `not_found_handling: "404-page"` en krijgt het formulier de 404-pagina in plaats
-  van de Worker. `index.ts` valt voor al het overige terug op `env.ASSETS.fetch`.
+- **Er is geen `run_worker_first` en geen `not_found_handling`** meer: bestanden uit
+  `assets` winnen vanzelf, al het andere komt bij `worker/index.ts` en de 404 rendert Next
+  zelf. Voeg ze niet terug; `not_found_handling: "404-page"` zou de Worker voorbijgaan.
 - `compatibility_date` moet een datum zijn die de **geïnstalleerde** wrangler aankan,
-  anders start `wrangler dev` niet. Verhoog hem samen met de dependency, niet los.
-- `npm run dev` kent `/api` niet. Werk aan dit deel met `npm run preview`.
+  anders start `wrangler dev` niet. Verhoog hem samen met de dependency, niet los. De
+  flags `nodejs_compat` en `global_fetch_strictly_public` zijn voor OpenNext nodig.
+- Bindings: `DB` (D1), `MEDIA` (R2, bucket `taalibtravels-media`), `ASSETS`, de twee
+  ratelimits. Hernoem ze niet zonder de code mee te nemen.
+- `npm run dev` kent `/api`, `/media` en D1 niet. Werk aan dit deel met `npm run preview`.
 - Het gegenereerde `Env`-type zegt `string` voor elk secret, maar dat is wat de config
   belóóft — is een secret in productie niet gezet, dan is de waarde `undefined`. Vandaar
   `beheerIsIngesteld()`: ontbreken de admin-secrets of zijn ze te kort, dan geeft álles
@@ -203,12 +274,32 @@ Wat je moet weten voordat je hier iets wijzigt:
   acht uur geldig, óók nadat je het wachtwoord juist vanwege een lek hebt vervangen.
 - De cookie heet `__Host-tt_admin`. Dat voorvoegsel is functioneel: het verbiedt een
   subdomein een eigen cookie met die naam te zetten. Hernoemen breekt die bescherming.
+  Het vereist `Secure`, dus een andere browser dan Chromium op `http://localhost` krijgt
+  hem niet; test dan met `wrangler dev --local-protocol https`.
 - **Er wordt geen IP-adres bewaard**, ook niet gehasht — zie `worker/migraties/001`.
   Voeg dat niet terug toe zonder een echte reden: het is een persoonsgegeven, en een
   SHA-256 over de IPv4-ruimte is triviaal terug te rekenen.
-- Security headers (waaronder de CSP) staan in `public/_headers`. Dat is de enige plek:
-  bij `output: "export"` draait `headers()` uit `next.config.ts` nooit. Laadt er ooit een
-  script van een nieuw domein, dan moet dat domein daar in de CSP bij.
+
+### Headers
+
+De headers (CSP, `nosniff`, referrer- en permissions-policy, cache-regels, het beheer
+zonder cache en met `noindex`) staan op **één plek**: `worker/beveiligingsheaders.ts`.
+Daaruit komen twee uitvoerwegen:
+
+- `scripts/build-headers.mjs` schrijft `public/_headers` voor de statische bestanden die
+  Cloudflare zelf serveert. Dat bestand is **gegenereerd en staat in `.gitignore`**; het
+  draait als `prebuild`, dus ook binnen `opennextjs-cloudflare build`. Pas het nooit met
+  de hand aan. Wie `--skipNextBuild` gebruikt, slaat `prebuild` over en levert zonder
+  `_headers` uit.
+- `metBeveiligingsheaders` in `worker/index.ts` zet de beveiligingsheaders (niet de
+  cacheregels) op elk antwoord van de Worker: pagina's, API en 404. `headers()` in
+  `next.config.ts` wordt daarvoor niet gebruikt.
+
+De CSP staat `'wasm-unsafe-eval'` alleen toe op `/admin` (de WebP-fallback van het
+uploadformulier, zie Foto's); `'unsafe-inline'` bij `script-src` is nodig voor het
+themascript en Next's hydratie. Laadt er ooit een script van een nieuw domein, dan moet
+dat domein in de CSP in `beveiligingsheaders.ts`. Zet geen tweede, aparte CSP in
+`_headers`: Cloudflare voegt dan twee beleiden samen en de strengste wint.
 
 ## Conventies
 
@@ -219,22 +310,42 @@ Wat je moet weten voordat je hier iets wijzigt:
 
 ## Foto's en video
 
-Foto's staan in `public/images` en worden beschreven in `images.json`, één keer per foto,
-met de bestandsnaam zonder extensie als id. Galerijen en `coverImage` verwijzen alleen naar
-die id's. Zet altijd de **echte** afmetingen in `width`/`height` — die bepalen de
-gereserveerde ruimte, een verkeerde waarde laat de pagina verspringen. Houd elke `gallery`
+Foto's beheer je in het portaal (tab Foto's); de code raak je daarvoor niet aan. Een foto
+heeft in D1 een id, `alt`, en de **echte** `width`/`height` van de bron — die bepalen de
+gereserveerde ruimte, een verkeerde waarde laat de pagina verspringen. Houd elke galerij
 op **zes** liggende (3:2) foto's: met de grote tegel erbij vult dat precies het raster, bij
-een ander aantal blijft er een lege cel over — `resolveGallery` breekt de build als het er
-niet zes zijn.
+een ander aantal blijft er een lege cel over (`valideerReis` weigert het).
 
-De bronfoto's worden nooit rechtstreeks geserveerd. `npm run images` maakt met `sharp`
-een WebP per breedte uit `scripts/image-sizes.mjs` in `public/images/generated` — een
-gegenereerde map die in `.gitignore` staat. Het draait automatisch als `prebuild`, en is
-incrementeel: alleen foto's die nieuwer zijn dan hun varianten worden opnieuw omgezet.
-`src/lib/image-loader.ts` wijst die varianten aan; zonder loader zou een statische export
-helemaal geen `srcset` opleveren en laadde elke telefoon de volle 1400px. Blijft de ladder
-in `image-sizes.mjs` niet gelijk aan `deviceSizes`/`imageSizes` in `next.config.ts`, dan
-vraagt de browser een bestand op dat niet bestaat.
+In R2 staat per foto `fotos/<id>/<breedte>.webp` voor elke breedte uit
+[src/lib/foto-breedtes.ts](src/lib/foto-breedtes.ts) plus `fotos/<id>/og.jpg` (1200px
+JPEG, voor linkvoorbeelden: niet elke previewer leest WebP als `og:image`). Publiek zijn
+dat `/media/fotos/<id>/<breedte>.webp` en `/media/fotos/<id>/og.jpg`; een `ETag` en
+`immutable` maken ze eeuwig cachebaar, omdat een id nooit hergebruikt wordt. In D1 staat
+`src` als het basispad `/media/fotos/<id>` zonder breedte.
+
+`foto-breedtes.ts` is de **enige** plek met de breedteladder. Vier kanten lezen hem en
+moeten gelijk blijven: `next.config.ts` (`deviceSizes`/`imageSizes`, voor de `srcset`), het
+uploadformulier in de browser, `worker/afbeeldingen.ts` (eist precies deze breedtes) en de
+scripts (`scripts/image-sizes.mjs` geeft hem door). Lopen ze uiteen, dan vraagt de browser
+een bestand op dat niet bestaat.
+
+De browser maakt de varianten **vóór** het uploaden (canvas, EXIF-rotatie gerespecteerd,
+bron begrensd op 4000px). Kan de browser geen WebP uit een canvas halen (oudere Safari/iOS),
+dan valt `upload-foto.ts` terug op `@jsquash/webp` (WASM, lazy geladen, dus alleen op
+`/admin` en alleen als het nodig is). Daarom staat `'wasm-unsafe-eval'` in de CSP van
+`/admin`. Gaat ook dat fout, dan krijgt de beheerder een eerlijke melding in plaats van een
+half geüploade foto.
+
+`src/lib/image-loader.ts` wijst voor `next/image` de variant aan (`/media/fotos/<id>` →
+`…/<breedte>.webp`); zonder loader komt er geen `srcset` en laadt elke telefoon de volle
+1600px. Alleen `public/images/*.jpg|png` met een variant gaat nog naar
+`/images/generated/<naam>-<breedte>.webp`; al het andere (logo, `og-image.jpg`, externe
+URL's) gaat ongewijzigd terug.
+
+`npm run images` (`scripts/build-images.mjs`, `prebuild` én `dev`) maakt die laatste
+varianten met `sharp` uit de bronfoto's die in `images.json` staan. De live site gebruikt
+ze niet meer: alle foto's komen uit R2. Het script en `images.json` bestaan nog omdat de
+seed ze nodig heeft; na de productie-seed vervalt de stap (zie Overgangsfase).
 
 `scripts/build-hero-video.mjs` heeft een hardgecodeerd `CLIPS_DIR` naar een lokale
 Downloads-map; `npm run hero-video` draait niet zonder die constanten eerst aan te passen.
@@ -247,9 +358,7 @@ De video staat bewust **niet** in de eerste lading: `hero-video.tsx` rendert de 
 pas als een `IntersectionObserver` aanslaat. Zet daar geen `autoPlay` of vaste `src` terug —
 dan haalt elke bezoeker weer 1,7 MB binnen vóór de pagina in beeld staat. Cloudflare
 beantwoordt een `Range`-request bovendien met het hele bestand, dus `preload` alleen helpt
-niet.
+niet. Video's en `public/images` zijn vaste bestanden met een vaste naam; hun cacheregels
+komen uit het gegenereerde `public/_headers` (zie Headers).
 
-Cache-headers staan in `public/_headers`. Zonder dat bestand serveert Cloudflare álles met
-`max-age=0, must-revalidate`, ook de content-gehashte bundels.
-
-Zie [README.md](README.md) voor de volledige uitleg over content, foto's en de hero-video.
+Zie [README.md](README.md) voor de volledige uitleg over het portaal en de hero-video.

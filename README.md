@@ -12,16 +12,18 @@ Componenten gebruiken uitsluitend semantische kleur-tokens (`bg-page`,
 keer per thema in `src/app/globals.css`; een rebrand of een derde thema vraagt
 dus geen enkele wijziging in een component.
 
-> **Statisch, op één uitzondering na.** Alle content staat als JSON in
-> `src/data` en wordt bij het bouwen meegebundeld, dus elke pagina is een
-> statisch bestand — de site draait als export op Cloudflare. De enige
-> servercode is `worker/`, en die draait uitsluitend op `/api/*`: het
-> inschrijfformulier van de giveaway en het admin-overzicht daarachter. Zie
+> **Dynamisch, op Cloudflare Workers.** De site draait als OpenNext-Worker. Reizen,
+> foto's en de homepagegalerij staan in D1 en R2 en worden in het
+> [beheerportaal](#beheerportaal) bewerkt; de pagina's lezen ze per verzoek, dus een
+> wijziging is direct live. Alleen de vaste content (bedrijfsgegevens, navigatie, FAQ,
+> giveaway, privacy) staat nog als JSON in `src/data`. De Worker (`worker/`) handelt
+> `/media/*` en `/api/*` zelf af en geeft de rest aan Next. Zie
 > [Giveaway en inschrijvingen](#giveaway-en-inschrijvingen).
 
 ## Stack
 
-- Next.js 16 (App Router, Turbopack)
+- Next.js 16 (App Router, Turbopack) op Cloudflare Workers via OpenNext
+- Cloudflare D1 (reizen, foto-metadata, deelnemers) en R2 (foto-bestanden)
 - React 19 + TypeScript
 - Tailwind CSS v4 (design tokens in `src/app/globals.css`)
 - `next/font` — Anton (display) en Poppins (body)
@@ -33,28 +35,36 @@ npm install
 npm run dev
 ```
 
-De site draait dan op http://localhost:3000.
+De site draait dan op http://localhost:3000, maar zonder D1, R2 en `/api`: de pagina's die
+reizen tonen werken pas met `npm run preview`. Vereist Node 22.18 of nieuwer.
 
 | Script                 | Doet                                                  |
 | ---------------------- | ----------------------------------------------------- |
-| `npm run dev`          | Ontwikkelserver (zonder `/api` — zie hieronder)       |
-| `npm run build`        | Productiebuild                                        |
-| `npm run preview`      | Build + `wrangler dev`: de enige manier om `/api` lokaal te draaien |
-| `npm run deploy`       | Build + `wrangler deploy`                             |
-| `npm run start`        | Productieserver (na build)                            |
+| `npm run dev`          | Ontwikkelserver (zonder `/api`, `/media` en D1)        |
+| `npm run build`        | `next build` (draait eerst `prebuild`: `images` en `headers`) |
+| `npm run preview`      | OpenNext-build + `wrangler dev`: de enige manier om `/api`, `/media` en D1 lokaal te draaien |
+| `npm run deploy`       | OpenNext-build + `wrangler deploy`                    |
+| `npm run start`        | Productieserver (na build); kent D1 niet               |
 | `npm run lint`         | ESLint                                                |
 | `npm run typecheck`    | TypeScript voor de site én de Worker                  |
 | `npm run typegen`      | Genereert de `PageProps`/`LayoutProps` route-types    |
 | `npm run cf-typegen`   | Genereert `Env` uit de bindings in `wrangler.jsonc`   |
+| `npm run seed`         | Zet de oorspronkelijke JSON-reizen en foto's over naar D1 en R2 (`-- --local` of `-- --remote`) |
+| `npm run images`       | WebP-varianten van de bronfoto's in `images.json` (alleen nog nodig voor de seed) |
+| `npm run headers`      | Schrijft `public/_headers` uit `worker/beveiligingsheaders.ts` |
 | `npm run hero-video`   | Bouwt de videocompilatie voor de hero (zie onder)      |
+| `npm run hero-video:web` | Leidt de WebM en het WebP-poster af                  |
 
 > `npm run typecheck` heeft twee gegenereerde bestanden nodig. Draai na een
 > verse clone eerst `npm run typegen` (of `dev` / `build`) voor de route-types,
-> en `npm run cf-typegen` voor het `Env`-type van de Worker.
+> en `npm run cf-typegen` voor het `Env`-type van de Worker. Kopieer eerst
+> `.dev.vars.example` naar `.dev.vars`: daar komen de secret-namen en de lokale
+> waarden vandaan.
 
-> `npm run dev` draait alleen Next.js en kent `/api` dus niet: het
-> giveaway-formulier geeft daar een netwerkfout. Werk je aan het formulier of
-> aan het admin-overzicht, gebruik dan `npm run preview`.
+> `npm run dev` draait alleen Next.js en kent `/api`, `/media` en D1 niet. Werk
+> je aan een pagina met reizen, het formulier of het beheerportaal, gebruik dan
+> `npm run preview`. Op Windows kan een gestopte `wrangler dev` een `workerd`-proces
+> achterlaten dat `.open-next/assets` vergrendelt; stop dat voor de volgende build.
 
 ## Structuur
 
@@ -64,11 +74,12 @@ src/
 │   ├── layout.tsx              Root layout: fonts, metadata, navbar/footer
 │   ├── page.tsx                Homepage
 │   ├── reizen/page.tsx         Overzicht van alle reizen
-│   ├── reizen/[slug]/page.tsx  Detailpagina per reis (statisch gegenereerd)
+│   ├── reizen/[slug]/page.tsx  Detailpagina per reis (per verzoek uit D1)
 │   ├── contact/page.tsx        Contactpagina
 │   ├── giveaway/page.tsx       Inschrijfpagina van de giveaway
-│   ├── admin/page.tsx          Beheeroverzicht (leeg omhulsel; data via /api)
+│   ├── admin/page.tsx          Beheerportaal (leeg omhulsel; data via /api)
 │   ├── privacy/page.tsx        Privacyverklaring
+│   ├── error.tsx               Foutpagina (bijv. als D1 onbereikbaar is)
 │   ├── not-found.tsx           404
 │   ├── sitemap.ts / robots.ts  SEO-basics
 │   └── globals.css             Tailwind-thema en design tokens
@@ -78,7 +89,7 @@ src/
 │   ├── home/hero.tsx           Hero van de homepage
 │   ├── home/hero-video.tsx     Videocompilatie in de hero (muted, loop)
 │   ├── giveaway/               Inschrijfformulier + Turnstile-hook
-│   ├── admin/                  Inlogscherm en deelnemerstabel
+│   ├── admin/                  Inlog en de tabs Deelnemers, Reizen, Foto's
 │   ├── trips/                  TripCard, TripDetail, DateBlock, FeatureList,
 │   │                           PriceBlock, GallerySection
 │   └── ui/                     Button, Badge, Section, Field, ThemeToggle,
@@ -86,80 +97,84 @@ src/
 ├── data/
 │   ├── site.json               Naam, tagline, contactgegevens, socials
 │   ├── navigation.json         Links in navigatiebalk en footer
-│   ├── inclusions.json         De "Inclusief?"-regels, per id
-│   ├── images.json             Elke foto één keer beschreven, per id
-│   ├── gallery.json            Gedeelde fotopool (lijst foto-id's)
+│   ├── inclusions.json         Voorstellen voor "Inclusief?"-regels in het portaal
 │   ├── faq.json                Veelgestelde vragen
 │   ├── giveaway.json           Copy, einddatum en Turnstile site key
 │   ├── privacy.json            Tekst van de privacyverklaring
-│   └── trips/                  Eén bestand per reis + index.ts (het register)
+│   └── trips/, gallery.json, images.json
+│                               Seed-bronbestanden (de site leest ze niet meer)
 ├── lib/
-│   ├── content.ts              Leest src/data in en levert de lees-functies
+│   ├── content.ts              De vaste JSON (SITE, NAV_LINKS, FAQ, ...), ook in de browser
+│   ├── trips.ts                Lezers voor reizen en foto's uit D1 (alleen server)
+│   ├── reizen-db.ts            D1-query's, gedeeld met de Worker
+│   ├── reizen.ts               Validatie en vorm van een reis, gedeeld met de Worker
+│   ├── foto-breedtes.ts        De breedteladder van elke foto
+│   ├── image-loader.ts         Wijst de variant van een foto aan
 │   ├── theme.ts                Themasleutel + init-script (geen "use client")
 │   ├── types.ts                Domeinmodellen
-│   ├── leads.ts                Validatieregels, gedeeld met de Worker
+│   ├── leads.ts                Validatieregels van de inschrijving, gedeeld met de Worker
 │   ├── api.ts                  API-paden en antwoordtypes, idem
 │   └── utils.ts                Datum-/prijsformattering, WhatsApp-links
-├── scripts/
-│   ├── generate-placeholders.mjs
-│   └── build-hero-video.mjs
-└── worker/                     De enige servercode; draait alleen op /api/*
-    ├── index.ts                Router en handlers
-    ├── auth.ts                 Sessiecookie en inlogcontrole
-    ├── csv.ts                  CSV-export
-    ├── schema.sql              Tabel `deelnemers` in D1
-    └── migraties/              Genummerde wijzigingen op een bestaande database
+
+scripts/
+├── build-headers.mjs           Schrijft public/_headers uit worker/beveiligingsheaders.ts
+├── build-images.mjs            WebP-varianten van bronfoto's (alleen nog voor de seed)
+├── seed-bestaande-content.mjs  Eenmalige overzet van JSON en foto's naar D1 en R2
+├── build-hero-video.mjs / build-hero-web.mjs
+└── image-sizes.mjs             Geeft de ladder uit foto-breedtes.ts door aan de scripts
+
+worker/                         De servercode; handelt /media/* en /api/* af
+├── index.ts                    Entry: /media, /api, dan OpenNext; zet de headers
+├── reizen.ts                   Beheer-API voor reizen
+├── afbeeldingen.ts             Beheer-API voor foto's en galerij
+├── media.ts                    /media/fotos/... uit R2
+├── http.ts                     Gedeelde antwoordhelpers
+├── beveiligingsheaders.ts      De ene definitie van alle headers
+├── auth.ts                     Sessiecookie en inlogcontrole
+├── csv.ts                      CSV-export
+├── schema.sql                  Tabellen in D1
+└── migraties/                  Genummerde wijzigingen op een bestaande database
 ```
 
-> `src/lib/leads.ts` en `src/lib/api.ts` worden door zowel de site als de Worker
-> geïmporteerd. Ze mogen daarom **geen `@/*`-alias gebruiken**: wrangler bundelt
+> `src/lib/leads.ts`, `api.ts`, `reizen.ts`, `reizen-db.ts` en `foto-breedtes.ts` worden
+> door zowel de site als de Worker geïmporteerd. Ze mogen daarom **geen `@/*`-alias gebruiken**: wrangler bundelt
 > met esbuild en past die alias niet toe.
 
 ## Foto's
 
-Alle foto's staan in `public/images` en worden beschreven in
-`src/data/images.json`. Een foto toevoegen of vervangen:
+Foto's beheer je in het [beheerportaal](#beheerportaal), tab **Foto's**. Daar upload je een
+foto (of meerdere tegelijk), vul je een `alt`-tekst in die beschrijft wat er te zien is, en
+verwijder je foto's die nergens meer in gebruik zijn.
 
-1. Zet het bestand in `public/images`. Schaal het eerst terug — de lange zijde
-   op ~1600px en JPEG-kwaliteit 80 levert scherpe beelden van 100–300 KB.
-2. Voeg hem toe aan `images.json` met de **echte** afmetingen: die bepalen de
-   verhouding waarmee Next.js de ruimte reserveert, dus een verkeerde waarde
-   laat de pagina verspringen. Schrijf ook een `alt` die beschrijft wat er te
-   zien is. Als id gebruiken we de bestandsnaam zonder extensie.
-3. Zet die id in `gallery.json`, in de `gallery` van een reis, of als
-   `coverImage` van een reis.
+Achter de schermen:
 
-```json
-"klokkentoren": {
-  "src": "/images/klokkentoren.jpg",
-  "alt": "De klokkentoren van Makkah tegen een blauwe lucht",
-  "width": 1400,
-  "height": 933
-}
-```
-
-Elke foto staat zo maar één keer beschreven, ook als hij bij meerdere reizen
-hoort: een gecorrigeerde alt-tekst of afmeting geldt meteen overal. Verwijs je
-naar een id die niet bestaat, dan faalt de build met een duidelijke melding.
-
-De galerij bestaat uit twee lagen. `gallery.json` is de gedeelde set en staat op
-de homepage. Krijgt een reis een eigen `gallery`, dan gebruikt die reis zijn
-eigen foto's — zo toont elke reispagina iets anders. Laat je hem weg, dan valt
-die reis terug op de gedeelde set.
+- De browser verkleint de foto vóór het uploaden naar elke breedte uit
+  `src/lib/foto-breedtes.ts` (WebP) en maakt een `og.jpg` (1200px) voor linkvoorbeelden.
+  Op een browser die geen WebP uit een canvas kan halen (oudere Safari/iOS) valt hij terug
+  op een WASM-encoder.
+- De Worker valideert type, grootte en breedtes en schrijft alles naar R2 onder
+  `fotos/<id>/<breedte>.webp` en `fotos/<id>/og.jpg`. Publiek komen ze uit
+  `/media/fotos/<id>/<breedte>.webp`, met `immutable`-cacheheaders.
+- In D1 staat per foto de id, `alt` en de **echte** `width`/`height` van de bron; die
+  bepalen de gereserveerde ruimte, dus een verkeerde waarde laat de pagina verspringen.
+- `src/lib/image-loader.ts` wijst voor `next/image` de juiste variant aan, zodat elke
+  foto een `srcset` krijgt en een telefoon niet de volle 1600px laadt.
 
 Drie dingen om rekening mee te houden:
 
-- **Houd elke `gallery` op zes foto's.** Met de grote tegel erbij vullen die
-  precies drie rijen van drie op desktop en drie rijen van twee op mobiel. Bij
-  een ander aantal blijft er onderaan een lege cel over — de build weigert het
-  dan ook.
+- **Elke galerij heeft precies zes foto's** (per reis en voor de homepage). Met de grote
+  tegel erbij vullen die precies drie rijen van drie op desktop en drie rijen van twee op
+  mobiel; bij een ander aantal blijft er een lege cel over, dus het portaal weigert het.
 - **Gebruik liggende foto's.** De tegels zijn breder dan hoog en snijden bij met
-  `object-cover`; van een staande foto blijft dan alleen een smalle band over.
-  Snijd ze daarom vooraf op 3:2 bij, zodat jij bepaalt wat er in beeld komt en
-  niet de browser.
-- **Snijd gecentreerd bij, niet automatisch.** De "attention"-modus van
-  beeldbewerkers kiest het contrastrijkste deel, en dat is bij een avondfoto
-  vaak juist de lege lucht of een donkere helling in plaats van de mensen.
+  `object-cover`; van een staande foto blijft dan alleen een smalle band over. Snijd ze
+  vooraf op 3:2 bij, zodat jij bepaalt wat er in beeld komt en niet de browser.
+- **Snijd gecentreerd bij, niet automatisch.** De "attention"-modus van beeldbewerkers kiest
+  het contrastrijkste deel, en dat is bij een avondfoto vaak juist de lege lucht of een
+  donkere helling in plaats van de mensen.
+
+De breedteladder staat op één plek, `src/lib/foto-breedtes.ts`. `next.config.ts`, het
+uploadformulier, de Worker en de scripts lezen hem allemaal; wijzig hem dus nooit op één
+plek.
 
 ## Hero-video
 
@@ -194,52 +209,78 @@ Het script schaalt en snijdt elk fragment bij naar hetzelfde staande kader en
 trekt de framerate gelijk. Zonder die stap weigert ffmpeg bronnen met
 verschillende afmetingen aan elkaar te plakken.
 
+Daarna leidt `npm run hero-video:web` uit de MP4 en de JPEG de WebM en het
+WebP-poster af die de hero echt gebruikt.
+
 > Let op de bestandsgrootte: de video speelt automatisch af, dus elke bezoeker
 > downloadt hem. Houd hem bij voorkeur onder ~5 MB.
 
 ## Content aanpassen
 
-Alles staat in **`src/data`**, per onderwerp een eigen bestand. Geen component
-hoeft aangeraakt te worden om teksten, prijzen of reizen te wijzigen.
+Wat waar staat:
 
-| Bestand              | Bevat                                                      |
-| -------------------- | ---------------------------------------------------------- |
-| `site.json`          | Naam, tagline, WhatsApp-nummer, e-mail, Instagram, domein   |
-| `navigation.json`    | De links in de navigatiebalk en de footer                   |
-| `inclusions.json`    | De "Inclusief?"-regels, één keer gedefinieerd, per id       |
-| `images.json`        | Elke foto één keer beschreven, per id                       |
-| `gallery.json`       | Gedeelde fotopool — een lijst van foto-id's                 |
-| `faq.json`           | Veelgestelde vragen op de contactpagina                     |
-| `trips/<slug>.json`  | Eén bestand per reis                                        |
-| `trips/index.ts`     | Het register: welke reisbestanden er zijn                   |
+| Wat | Waar | Hoe wijzig je het |
+| --- | ---- | ----------------- |
+| Reizen (alle velden, prijzen, inclusies, status) | D1 | Beheerportaal, tab Reizen |
+| Foto's en de homepagegalerij | D1 + R2 | Beheerportaal, tab Foto's |
+| Naam, tagline, WhatsApp, e-mail, Instagram, domein | `src/data/site.json` | JSON bewerken |
+| Links in navigatiebalk en footer | `src/data/navigation.json` | JSON bewerken |
+| Veelgestelde vragen | `src/data/faq.json` | JSON bewerken |
+| Giveaway-copy, einddatum, Turnstile site key | `src/data/giveaway.json` | JSON bewerken |
+| Privacyverklaring | `src/data/privacy.json` | JSON bewerken |
+| Voorstellen voor "Inclusief?"-regels in het reisformulier | `src/data/inclusions.json` | JSON bewerken |
 
-### Een reis toevoegen
+Een wijziging in het portaal staat bij de volgende paginalading live; er is geen build of
+deploy voor nodig. Een wijziging in de JSON hierboven vraagt wel een deploy.
 
-1. Maak `src/data/trips/<slug>.json` aan — kopieer een bestaande reis als basis.
-2. Zet in `src/data/trips/index.ts` één import erbij en de naam in de lijst.
-   Die lijst staat er met de hand omdat `content.ts` ook in de browser-bundle
-   belandt (de navbar gebruikt hem), en daar kan geen map uitgelezen worden.
-3. Draai `npm run build`. Klopt er een verwijzing niet, dan hoor je het meteen.
+`src/lib/content.ts` leest de vaste JSON in (synchroon, ook in de browserbundel);
+`src/lib/trips.ts` leest reizen en foto's per verzoek uit D1 (alleen server);
+`src/lib/types.ts` beschrijft de vorm.
 
-### Regels die de bestanden hanteren
+### Regels van het portaal
 
-- Een reis verwijst met id's naar `inclusions.json` en `images.json`, zodat
-  dezelfde tekst of foto niet bij elke reis herhaald staat. Verwijs je naar een
-  id die niet bestaat, dan faalt de build met een duidelijke melding — geen
-  stille lege lijst.
-- `status: "draft"` verbergt een reis zonder hem te verwijderen. Drafts worden
-  eruit gefilterd vóór de verwijzingen opgezocht worden, dus een half afgewerkte
-  reis breekt de build niet.
-- De homepage-hero toont altijd de eerstvolgende reis: de eerste die op de dag
-  van de build nog niet terug is. Daar valt niets aan in te stellen — zet de
-  datums goed en de hero volgt vanzelf.
-- Een reis zonder eigen `gallery` gebruikt de gedeelde pool uit `gallery.json`.
-  Elke galerij telt precies zes foto's.
-- Datums zijn ISO (`"2026-11-07"`), `slug` is uniek en vormt de URL. De
-  bestandsnaam volgt de slug, maar de `slug`-waarde in het bestand telt.
+- De **slug** van een reis staat vast na het aanmaken: hij is de URL.
+- Een foto die nog in gebruik is (omslag, galerij, homepagegalerij) kan niet worden
+  verwijderd; het portaal noemt de reizen die hem gebruiken.
+- Een galerij heeft precies zes foto's. Een reis zonder eigen galerij toont de
+  homepagegalerij.
+- `status: draft` verbergt een reis publiek zonder hem te verwijderen.
+- De homepage-hero toont altijd de eerstvolgende reis die nog niet terug is; daar valt
+  niets aan in te stellen — zet de datums goed en de hero volgt vanzelf.
+- Datums zijn ISO (`"2026-11-07"`).
 
-`src/lib/content.ts` is de enige plek die het bestand inleest; `src/lib/types.ts`
-beschrijft de vorm ervan.
+## Beheerportaal
+
+`/admin` (met inlog) heeft drie tabs:
+
+- **Deelnemers** — de giveaway-inschrijvingen: zoeken, e-mailadressen kopiëren, CSV-export,
+  verwijderen.
+- **Reizen** — reizen aanmaken, bewerken, verbergen/tonen en verwijderen, met alle velden van
+  de reispagina, de inclusies, een omslagfoto en een galerij uit de fotobibliotheek.
+- **Foto's** — foto's uploaden, de alt-tekst aanpassen, verwijderen en de homepagegalerij kiezen.
+
+Benodigd:
+
+| Wat | Waar |
+| --- | ---- |
+| `ADMIN_GEBRUIKER`, `ADMIN_WACHTWOORD` (≥ 16 tekens), `ADMIN_SESSIE_SECRET` | `npx wrangler secret put …` in productie, `.dev.vars` lokaal |
+| `TURNSTILE_SECRET` | idem (alleen voor de giveaway) |
+| D1-database `DB` | `wrangler.jsonc`; schema uit `worker/schema.sql` en `worker/migraties/` |
+| R2-bucket `MEDIA` (`taalibtravels-media`) | `wrangler.jsonc`; eenmalig aanmaken met `npx wrangler r2 bucket create taalibtravels-media` |
+
+Ontbreken de admin-secrets, dan antwoordt alles onder `/api/admin/` met 503.
+
+Lokaal werk je met `npm run preview` (build + `wrangler dev`); `npm run dev` kent `/api`,
+`/media` en D1 niet. Op Windows kan een gestopte `wrangler dev` `.open-next/assets`
+vergrendelen: stop dan eerst de achtergebleven `workerd`-processen.
+
+### Bestaande reizen overzetten (eenmalig)
+
+`npm run seed -- --local` (of `--remote`, met expliciete toestemming) zet de oorspronkelijke
+JSON-reizen en de foto's uit `public/images` over naar D1 en R2. Die bronbestanden
+(`src/data/trips/*.json`, `gallery.json`, `images.json`, `public/images`) zijn alleen nog
+**seed-bronbestanden**: de site leest ze niet meer, en ze kunnen weg zodra de productie-seed
+is gedraaid.
 
 ## Giveaway en inschrijvingen
 
@@ -322,9 +363,9 @@ meer bestaat, en breekt elke inschrijving.
 
 `/admin` vraagt om gebruikersnaam en wachtwoord, en toont daarna alle
 inschrijvingen, met een zoekveld, een knop om alle e-mailadressen te kopiëren, een
-CSV-export en een verwijderknop per rij. De pagina zelf is statische HTML zonder
-gegevens erin — alles komt via de API achter de sessiecontrole binnen, want bij een
-statische export staat elk gegenereerd bestand publiek op het netwerk.
+CSV-export en een verwijderknop per rij. De pagina zelf is HTML zonder
+gegevens erin — alles komt via de API achter de sessiecontrole binnen. De overige tabs
+van het portaal staan onder [Beheerportaal](#beheerportaal).
 
 De sessie is een cookie met een ondertekend vervalmoment plus een vingerafdruk van
 de huidige inloggegevens. Daardoor is **je wachtwoord of gebruikersnaam wijzigen

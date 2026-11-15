@@ -204,15 +204,17 @@
 
 ### Task 9: Cleanup, docs and production switch-over
 
+> **Splitsing (besluit):** stap 3 (docs en dode code) en stap 6 zijn lokaal gedaan als **9a** (`docs: CLAUDE.md en README bijgewerkt voor het beheerportaal`, `chore: verouderde statische-export-resten opgeruimd`). Stappen 1, 2 en 5 en het verwijderen van de seed-bronbestanden (Files: Delete) vormen **9b: wacht op expliciete toestemming van de gebruiker** (R2-bucket, remote migratie, remote seed en deploy raken productie).
+
 **Files:**
 - Delete: `src/data/trips/*`, `src/data/gallery.json`, `src/data/images.json` (after seed is verified remote), `scripts/build-images.mjs` and the `images`/`prebuild` scripts if no longer used
 - Modify: `CLAUDE.md`, `README.md`, `package.json`, `wrangler.jsonc` (R2 binding with a comment on why it exists), `.gitignore`
 
-- [ ] **Step 1: Create the R2 bucket** (`wrangler r2 bucket create taalibtravels-media`) and apply migration 002 to the remote D1.
-- [ ] **Step 2: Run `node scripts/seed-bestaande-content.mjs --remote`** and confirm counts with a remote `SELECT COUNT(*)`.
-- [ ] **Step 3: Remove the obsolete JSON, scripts and unused code** (`getTripSlugs`, `TRIP_FILES`, build-time resolvers) and update `CLAUDE.md` (architecture, commands, "Content is data" section, headers section, photo section) and `README.md` to the new reality.
+- [ ] **Step 1 (9b: wacht op expliciete toestemming van de gebruiker): Create the R2 bucket** (`wrangler r2 bucket create taalibtravels-media`) and apply migration 002 to the remote D1.
+- [ ] **Step 2 (9b: wacht op expliciete toestemming van de gebruiker): Run `node scripts/seed-bestaande-content.mjs --remote`** and confirm counts with a remote `SELECT COUNT(*)`.
+- [x] **Step 3 (9a, deels: `TRIP_FILES` en stale comments weg; de JSON en scripts blijven tot na de productie-seed): Remove the obsolete JSON, scripts and unused code** (`getTripSlugs`, `TRIP_FILES`, build-time resolvers) and update `CLAUDE.md` (architecture, commands, "Content is data" section, headers section, photo section) and `README.md` to the new reality.
 - [ ] **Step 4: Run `npm run lint && npm run typecheck && npm run build`.** Expected: all pass with no references to removed files.
-- [ ] **Step 5: Deploy only after the user confirms** (`npm run deploy`), then check production: `/`, a trip page, `/media/…`, `/admin` login, and one create/delete round-trip.
+- [ ] **Step 5 (9b: wacht op expliciete toestemming van de gebruiker): Deploy only after the user confirms** (`npm run deploy`), then check production: `/`, a trip page, `/media/…`, `/admin` login, and one create/delete round-trip.
 - [ ] **Step 6: Commit** `docs: CLAUDE.md en README bijgewerkt voor het beheerportaal`.
 
 ---
