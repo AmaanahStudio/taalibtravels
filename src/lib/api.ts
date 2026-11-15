@@ -8,6 +8,7 @@
  */
 
 import type { LeadFouten } from "./leads";
+import type { ReisFouten, ReisInvoer } from "./reizen";
 
 /**
  * Alles onder /api/ gaat naar de Worker; de rest van de site blijft statisch.
@@ -20,7 +21,13 @@ export const API = {
   logout: "/api/admin/logout",
   deelnemers: "/api/admin/deelnemers",
   export: "/api/admin/deelnemers.csv",
+  reizen: "/api/admin/reizen",
+  afbeeldingen: "/api/admin/afbeeldingen",
+  galerij: "/api/admin/galerij",
 } as const;
+
+/** Voorvoegsel waaronder de Worker foto's uit R2 serveert: `/media/<sleutel>`. */
+export const MEDIA_PAD = "/media/";
 
 /** Pad om één inschrijving te verwijderen. */
 export function deelnemerPad(id: number): string {
@@ -51,4 +58,47 @@ export type InschrijfAntwoord =
 export interface DeelnemersAntwoord {
   deelnemers: Deelnemer[];
   totaal: number;
+}
+
+/** Pad om één reis te lezen, bewerken of verwijderen. */
+export function reisPad(slug: string): string {
+  return `${API.reizen}/${encodeURIComponent(slug)}`;
+}
+
+/** Pad om één foto te verwijderen of van alt-tekst te wijzigen. */
+export function afbeeldingPad(id: string): string {
+  return `${API.afbeeldingen}/${encodeURIComponent(id)}`;
+}
+
+/** Eén reis zoals het portaal hem leest en schrijft; `updatedAt` is ISO-8601 in UTC. */
+export type ReisRecord = ReisInvoer & { updatedAt: string };
+
+/**
+ * Antwoord op het aanmaken of wijzigen van een reis. `fouten` staat er alleen bij
+ * afgekeurde invoer, zodat het formulier de melding onder het juiste veld zet.
+ */
+export type ReisAntwoord =
+  | { ok: true; reis: ReisRecord }
+  | { ok: false; melding: string; fouten?: ReisFouten };
+
+export interface ReizenAntwoord {
+  reizen: ReisRecord[];
+}
+
+/** Eén foto in de bibliotheek. `sleutel` is de R2-sleutel: de foto staat op `MEDIA_PAD + sleutel`. */
+export interface AfbeeldingRecord {
+  id: string;
+  sleutel: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+export interface AfbeeldingenAntwoord {
+  afbeeldingen: AfbeeldingRecord[];
+}
+
+/** De gedeelde homepagegalerij: afbeelding-id's in volgorde. */
+export interface GalerijAntwoord {
+  galerij: string[];
 }
