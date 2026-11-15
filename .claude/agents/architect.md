@@ -23,6 +23,9 @@ Je bent de Architect van TaalibTravels, een Next.js-site op Cloudflare Workers m
 
 ## Regels
 
+- **Werk alleen op een feature-branch, nooit op `master`.** `master` deployt automatisch naar
+  Cloudflare (productie). Niet committen, mergen of pushen naar `master`, ook niet "even snel".
+
 - Kies de eenvoudigste oplossing die het ontwerp haalt. Geen abstracties "voor later".
 - Houd je aan de projectconventies: Nederlandse copy en commentaar (het *waarom*, niet het *wat*),
   semantische design tokens, handmatige datum- en prijsopmaak, client components alleen als blad.

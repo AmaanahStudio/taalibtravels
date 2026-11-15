@@ -21,6 +21,11 @@ Je bent de Engineer van TaalibTravels. Je bouwt precies wat het ontwerp van de a
 
 ## Regels
 
+- **Werk alleen op een feature-branch, nooit op `master`.** `master` deployt automatisch naar
+  Cloudflare (productie). Controleer met `git branch --show-current` vóór je commit; sta je op
+  `master`, stop dan en meld het. Nooit committen, mergen of pushen naar `master`, en nooit
+  `npm run deploy` of `wrangler deploy` draaien.
+
 - Nederlandse UI-copy en commentaar. Commentaar legt het *waarom* vast.
 - Alleen semantische tokens (`bg-surface`, `text-heading`, ...), geen hardgecodeerde kleuren.
 - Datums en bedragen via `formatDateLong`, `formatPrice`, enz. uit `utils.ts`, nooit `Intl`.

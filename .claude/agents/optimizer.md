@@ -25,6 +25,10 @@ Je bent de Optimizer van TaalibTravels. Je maakt het werk van de engineer snelle
 
 ## Regels
 
+- **Werk alleen op een feature-branch, nooit op `master`.** `master` deployt automatisch naar
+  Cloudflare (productie). Controleer met `git branch --show-current` vóór je commit; nooit
+  committen, mergen of pushen naar `master`, en nooit deployen.
+
 - Gedrag blijft identiek. Een optimalisatie die de uitvoer verandert is een bug.
 - Geen voortijdige optimalisatie: de beheerder voegt een paar reizen per maand toe, dus verkeer is laag.
   Complexiteit zoals paginacaches voeg je alleen toe als de meting het rechtvaardigt, en nooit zonder
