@@ -152,16 +152,19 @@ async function upload(request: Request, env: Env): Promise<Response> {
 
   /*
    * Eerst R2, dan D1: zo verwijst de database nooit naar bestanden die er niet
-   * zijn. Mislukt er onderweg iets, dan ruimen we de al geschreven varianten op.
+   * zijn. `allSettled` wacht tot élke put klaar is, ook na een mislukte — anders
+   * kan een trage put pas ná het opruimen landen en alsnog blijven staan.
    */
   try {
-    await Promise.all(
+    const uitkomsten = await Promise.allSettled(
       varianten.map(([breedte, bytes]) =>
         env.MEDIA.put(`${sleutel}/${breedte}.webp`, bytes, {
           httpMetadata: { contentType: "image/webp" },
         }),
       ),
     );
+    const mislukt = uitkomsten.find((u) => u.status === "rejected");
+    if (mislukt) throw mislukt.reason;
 
     await env.DB.prepare(
       `INSERT INTO afbeeldingen (id, r2_sleutel, alt, width, height, aangemaakt)
@@ -170,7 +173,12 @@ async function upload(request: Request, env: Env): Promise<Response> {
       .bind(id, sleutel, invoer.alt, invoer.width, invoer.height, new Date().toISOString())
       .run();
   } catch (fout) {
-    await env.MEDIA.delete(varianten.map(([breedte]) => `${sleutel}/${breedte}.webp`));
+    // Een fout bij het opruimen mag de oorspronkelijke fout niet verbergen.
+    try {
+      await env.MEDIA.delete(varianten.map(([breedte]) => `${sleutel}/${breedte}.webp`));
+    } catch (opruimFout) {
+      console.error(`Opruimen van ${sleutel}/ na mislukte upload faalde:`, opruimFout);
+    }
     throw fout;
   }
 
@@ -327,7 +335,16 @@ async function verwijder(id: string, env: Env): Promise<Response> {
     );
   }
 
-  await verwijderVarianten(env.MEDIA, r2Sleutel);
+  /*
+   * De rij is weg en daarmee de foto voor de site. Lukt het opruimen in R2 niet,
+   * dan blijven er onbereikbare bestanden over — jammer, maar geen reden om de
+   * beheerder een fout te tonen voor iets wat wél gelukt is.
+   */
+  try {
+    await verwijderVarianten(env.MEDIA, r2Sleutel);
+  } catch (fout) {
+    console.error(`Opruimen van ${r2Sleutel}/ in R2 na verwijderen faalde:`, fout);
+  }
   return json({ ok: true });
 }
 
@@ -378,27 +395,38 @@ async function bewaarGalerij(request: Request, env: Env): Promise<Response> {
     return json({ ok: false, melding: "Elke foto mag maar één keer voorkomen." }, 400);
   }
 
-  const bestaand = await env.DB.prepare(
-    `SELECT COUNT(*) AS aantal FROM afbeeldingen
-      WHERE id IN (${ids.map(() => "?").join(", ")})`,
-  )
-    .bind(...ids)
-    .first<{ aantal: number }>();
-
-  if (bestaand?.aantal !== ids.length) {
+  if (!(await bestaanAlle(env, ids))) {
     return json({ ok: false, melding: "Een of meer foto's bestaan niet meer." }, 400);
   }
 
   // Eén batch is één transactie: de homepage ziet nooit een halve galerij.
-  await env.DB.batch([
-    env.DB.prepare("DELETE FROM galerij"),
-    ...ids.map((id, i) =>
-      env.DB.prepare("INSERT INTO galerij (positie, afbeelding_id) VALUES (?, ?)").bind(
-        i + 1,
-        id,
+  try {
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM galerij"),
+      ...ids.map((id, i) =>
+        env.DB.prepare("INSERT INTO galerij (positie, afbeelding_id) VALUES (?, ?)").bind(
+          i + 1,
+          id,
+        ),
       ),
-    ),
-  ]);
+    ]);
+  } catch (fout) {
+    /*
+     * Is er tussen de controle en het schrijven een foto verwijderd, dan weigert
+     * de foreign key de batch. Dat stellen we vast door opnieuw te kijken, niet
+     * door de tekst van de D1-fout te lezen. Bestaan ze nog allemaal, dan was het
+     * iets anders en mag de algemene foutafhandeling het overnemen.
+     */
+    if (await bestaanAlle(env, ids)) throw fout;
+    return json(
+      {
+        ok: false,
+        melding:
+          "Een van de gekozen foto's bestaat niet meer. Vernieuw de pagina en probeer opnieuw.",
+      },
+      409,
+    );
+  }
 
   const antwoord: GalerijAntwoord = { galerij: ids };
   return json(antwoord);
@@ -414,6 +442,17 @@ const MAX_ID = 100;
 
 function leesId(ruw: string): string | null {
   return ruw.length <= MAX_ID && ID_PATROON.test(ruw) ? ruw : null;
+}
+
+/** Staan alle (unieke) id's in de bibliotheek? */
+async function bestaanAlle(env: Env, ids: string[]): Promise<boolean> {
+  const rij = await env.DB.prepare(
+    `SELECT COUNT(*) AS aantal FROM afbeeldingen
+      WHERE id IN (${ids.map(() => "?").join(", ")})`,
+  )
+    .bind(...ids)
+    .first<{ aantal: number }>();
+  return rij?.aantal === ids.length;
 }
 
 function naarRecord(rij: AfbeeldingRij): AfbeeldingRecord {
