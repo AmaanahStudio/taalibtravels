@@ -94,11 +94,38 @@ export interface AfbeeldingRecord {
   height: number;
 }
 
-export interface AfbeeldingenAntwoord {
-  afbeeldingen: AfbeeldingRecord[];
+/** Een foto in het overzicht, met het aantal plekken (reizen en homepagegalerij) waar ze staat. */
+export interface AfbeeldingMetGebruik extends AfbeeldingRecord {
+  gebruik: number;
 }
+
+export interface AfbeeldingenAntwoord {
+  afbeeldingen: AfbeeldingMetGebruik[];
+}
+
+/** Antwoord op het uploaden of wijzigen van één foto. */
+export type AfbeeldingAntwoord =
+  | { ok: true; afbeelding: AfbeeldingRecord }
+  | { ok: false; melding: string };
 
 /** De gedeelde homepagegalerij: afbeelding-id's in volgorde. */
 export interface GalerijAntwoord {
   galerij: string[];
+}
+
+/*
+ * Grenzen van een upload. Formulier en Worker lezen ze hier allebei, zodat de
+ * browser niets verstuurt wat de Worker toch weigert.
+ */
+export const UPLOAD = {
+  /** Per WebP-variant. Samen blijft een upload zo ruim binnen de requestlimiet. */
+  maxVariantBytes: 1024 * 1024,
+  maxAlt: 200,
+  /** Breedte en hoogte van de bron, in pixels. */
+  maxAfmeting: 10000,
+} as const;
+
+/** Naam van het formulierveld met de variant van `breedte` pixels, bv. `v640`. */
+export function variantVeld(breedte: number): string {
+  return `v${breedte}`;
 }

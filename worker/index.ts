@@ -9,7 +9,9 @@
  */
 
 import openNext from "../.open-next/worker.js";
-import { API, type Deelnemer, type DeelnemersAntwoord } from "../src/lib/api";
+import { API, MEDIA_PAD, type Deelnemer, type DeelnemersAntwoord } from "../src/lib/api";
+import { routeerAfbeeldingen } from "./afbeeldingen";
+import { serveerMedia } from "./media";
 import { valideerLead } from "../src/lib/leads";
 import {
   gelijkInConstanteTijd,
@@ -56,6 +58,11 @@ export default {
     ctx: ExecutionContext,
   ): Promise<Response> {
     const url = new URL(request.url);
+
+    // Foto's uit R2: publiek en alleen-lezen, dus vóór de API en zonder sessie.
+    if (url.pathname.startsWith(MEDIA_PAD)) {
+      return serveerMedia(request, url, env);
+    }
 
     // Alles buiten /api/ is van Next (OpenNext): pagina's, assets en 404's.
     if (!url.pathname.startsWith("/api/")) {
@@ -118,6 +125,10 @@ async function routeer(
   if (pathname.startsWith(`${API.deelnemers}/`) && methode === "DELETE") {
     return verwijder(request, url, env);
   }
+
+  // Foto's en homepagegalerij (`afbeeldingen.ts`); `null` = geen van die routes.
+  const fotoAntwoord = await routeerAfbeeldingen(request, url, env);
+  if (fotoAntwoord) return fotoAntwoord;
 
   return json({ ok: false, melding: "Onbekende route." }, 404);
 }
