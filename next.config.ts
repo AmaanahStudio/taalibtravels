@@ -1,8 +1,14 @@
 import path from "node:path";
 
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
 import { DEVICE_SIZES, IMAGE_SIZES } from "./src/lib/foto-breedtes";
+
+// Geeft `next dev` de bindings uit wrangler.jsonc (D1, R2), zodat
+// `getCloudflareContext()` ook buiten `npm run preview` werkt. Gebruikt de lokale
+// D1-staat; de `/api`- en `/media`-routes van de Worker blijven alleen in `preview`.
+initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
   turbopack: {

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Command             | Doet                                                    |
 | ------------------- | ------------------------------------------------------- |
-| `npm run dev`       | Dev server op http://localhost:3000 — **zonder `/api`, `/media` en D1** |
+| `npm run dev`       | Dev server op http://localhost:3000 — D1 via `initOpenNextCloudflareForDev` (lokale staat), **zonder `/api` en `/media`** |
 | `npm run preview`   | `opennextjs-cloudflare build && wrangler dev` — de enige manier om `/api`, `/media` en de D1-pagina's lokaal te draaien |
 | `npm run build`     | `next build` (draait eerst `prebuild`: `images` + `headers`) |
 | `npm run deploy`    | `opennextjs-cloudflare build && wrangler deploy`        |
@@ -257,7 +257,7 @@ Wat je moet weten voordat je hier iets wijzigt:
   flags `nodejs_compat` en `global_fetch_strictly_public` zijn voor OpenNext nodig.
 - Bindings: `DB` (D1), `MEDIA` (R2, bucket `taalibtravels-media`), `ASSETS`, de twee
   ratelimits. Hernoem ze niet zonder de code mee te nemen.
-- `npm run dev` kent `/api`, `/media` en D1 niet. Werk aan dit deel met `npm run preview`.
+- `npm run dev` leest D1 via `initOpenNextCloudflareForDev` (in `next.config.ts`, lokale D1-staat), maar kent `/api` en `/media` niet. Werk aan dit deel met `npm run preview`.
 - Het gegenereerde `Env`-type zegt `string` voor elk secret, maar dat is wat de config
   belóóft — is een secret in productie niet gezet, dan is de waarde `undefined`. Vandaar
   `beheerIsIngesteld()`: ontbreken de admin-secrets of zijn ze te kort, dan geeft álles

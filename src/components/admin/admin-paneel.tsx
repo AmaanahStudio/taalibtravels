@@ -316,7 +316,7 @@ export function AdminPaneel() {
         <div
           role="tablist"
           aria-label="Beheer"
-          className="mb-8 flex gap-1 overflow-x-auto border-b border-line"
+          className="mb-8 flex gap-1 border-b border-line"
         >
           {TABBLADEN.map((tab, index) => {
             const gekozen = tab.id === actief;

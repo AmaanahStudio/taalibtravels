@@ -39,7 +39,7 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
 
         <p className="max-w-md text-base leading-relaxed text-body">
           Deze pagina kon even niet geladen worden. Probeer het zo opnieuw, of
-          stuur ons meteen een bericht — we helpen je graag verder.
+          stuur ons meteen een bericht, we helpen je graag verder.
         </p>
 
         <div className="mt-2 flex flex-col gap-3 sm:flex-row">

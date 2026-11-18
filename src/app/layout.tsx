@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Anton, Poppins } from "next/font/google";
+import Script from "next/script";
 
 import { AmbientBackground } from "@/components/layout/ambient-background";
 import { Footer } from "@/components/layout/footer";
@@ -34,7 +35,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: {
-    default: `${SITE.name} — ${SITE.tagline}`,
+    default: `${SITE.name} - ${SITE.tagline}`,
     template: `%s | ${SITE.name}`,
   },
   description: SITE.description,
@@ -57,20 +58,20 @@ export const metadata: Metadata = {
     locale: SITE.locale,
     url: SITE.url,
     siteName: SITE.name,
-    title: `${SITE.name} — ${SITE.tagline}`,
+    title: `${SITE.name} - ${SITE.tagline}`,
     description: SITE.description,
     images: [
       {
         url: "/images/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: `${SITE.name} — Umrah reizen`,
+        alt: `${SITE.name} - Umrah reizen`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE.name} — ${SITE.tagline}`,
+    title: `${SITE.name} - ${SITE.tagline}`,
     description: SITE.description,
     images: ["/images/og-image.jpg"],
   },
@@ -99,7 +100,11 @@ export default function RootLayout({
       <head>
         {/* Draait synchroon tijdens het parsen van de HTML, dus vóór de eerste
             paint. Zonder dit flitst de pagina donker voor wie licht koos. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
       </head>
       <body className="flex min-h-full flex-col">
         <AmbientBackground />

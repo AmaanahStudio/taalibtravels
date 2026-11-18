@@ -34,7 +34,7 @@ export default async function TripsPage() {
         as="h1"
         eyebrow="Ons aanbod"
         title="Kies je reis"
-        intro="Elke reis gaat met een kleine groep en is compleet: vlucht, hotel in Makkah en Madinah, visum en Nederlandstalige begeleiding. Kies de datum die je past — de rest regelen wij."
+        intro="Elke reis gaat met een kleine groep en is compleet: vlucht, hotel in Makkah en Madinah, visum en Nederlandstalige begeleiding. Kies de datum die je past, de rest regelen wij."
       />
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
