@@ -22,9 +22,15 @@ import {
   normaliseerGebruiker,
   wisSessieCookie,
 } from "./auth";
+import { heeftGeldigAccessToken } from "./access";
 import { bouwCsv } from "./csv";
 import { json, leesJson, methodeNietToegestaan, vanEigenOrigin } from "./http";
 import { routeerReizen } from "./reizen";
+
+const LOKALE_HOSTS: ReadonlySet<string> = new Set(["localhost", "127.0.0.1"]);
+
+/** Alles hieronder valt onder Cloudflare Access. */
+const BEHEER_API = "/api/admin/";
 
 /** Bovengrens op het overzicht, zodat één verzoek nooit de hele tabel trekt. */
 const OVERZICHT_LIMIET = 5000;
@@ -83,6 +89,11 @@ export default {
 
 async function apiAntwoord(request: Request, url: URL, env: Env): Promise<Response> {
   try {
+    // Het beheer (ook inloggen) is alleen bereikbaar via Cloudflare Access.
+    if (url.pathname.startsWith(BEHEER_API) && !(await accessGoedgekeurd(request, url, env))) {
+      return json({ ok: false, melding: "Geen toegang." }, 403);
+    }
+
     return await routeer(request, url, env);
   } catch (fout) {
     // De echte fout blijft in de Cloudflare-logs; de bezoeker krijgt hem niet
@@ -438,6 +449,36 @@ function beheerIsIngesteld(env: Env): boolean {
     (env.ADMIN_WACHTWOORD ?? "").length >= MINIMALE_WACHTWOORDLENGTE &&
     (env.ADMIN_SESSIE_SECRET ?? "").length >= MINIMALE_WACHTWOORDLENGTE
   );
+}
+
+/**
+ * Faalt dicht: ontbreken `TEAM_DOMAIN` of `POLICY_AUD`, dan gaat er niets door.
+ * Alleen `ACCESS_UIT=1` zet de controle uit. Die variabele staat uitsluitend in
+ * `.dev.vars` (lokaal, `.gitignore`) en hoort nooit als secret of var in
+ * productie te staan, want Access draait niet op localhost.
+ */
+async function accessGoedgekeurd(request: Request, url: URL, env: Env): Promise<boolean> {
+  /*
+   * Ook de host moet lokaal zijn. Belandt `ACCESS_UIT` per ongeluk in productie
+   * (bijvoorbeeld door `wrangler secret bulk .dev.vars`), dan blijft de controle
+   * aan: Cloudflare bepaalt de host via de custom domains, en die is nooit localhost.
+   */
+  if (env.ACCESS_UIT === "1" && LOKALE_HOSTS.has(url.hostname)) return true;
+  if (env.ACCESS_UIT === "1") {
+    console.error("ACCESS_UIT is gezet op een niet-lokale host; genegeerd. Verwijder deze variabele.");
+  }
+
+  if (!env.TEAM_DOMAIN || !env.POLICY_AUD) {
+    console.error("TEAM_DOMAIN of POLICY_AUD ontbreekt; beheer-API is dicht.");
+    return false;
+  }
+
+  try {
+    return await heeftGeldigAccessToken(request, env.TEAM_DOMAIN, env.POLICY_AUD);
+  } catch (fout) {
+    console.error("Access-token controleren mislukt:", fout);
+    return false;
+  }
 }
 
 function beheerNietIngesteld(): Response {

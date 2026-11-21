@@ -20,3 +20,7 @@ ADMIN_SESSIE_SECRET="verander-dit-ook-lokaal-5678"
 # maar in productie hoort hier de echte secret key van je widget.
 # De bijbehorende publieke site key staat in src/data/giveaway.json.
 TURNSTILE_SECRET="1x0000000000000000000000000000000AA"
+
+# Lokaal draait Cloudflare Access niet; "1" slaat de tokencontrole over
+# (worker/access.ts). Zet dit NOOIT in productie.
+ACCESS_UIT="1"

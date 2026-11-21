@@ -70,6 +70,14 @@
 			}
 		}
 	],
+	// Cloudflare Access staat vóór /admin* en /api/admin/*; de Worker controleert
+	// het token zelf (worker/access.ts). Geen geheimen: de AUD-tag staat ook in
+	// elk token. Wijzig je de Access-applicatie (of verwijder je hem en maak je hem
+	// opnieuw), dan krijgt hij een nieuwe AUD-tag en moet die hier mee.
+	"vars": {
+		"TEAM_DOMAIN": "https://taalibtravelsdomain.cloudflareaccess.com",
+		"POLICY_AUD": "33cc7a09b0246cf17132b2131895616959bf43810cfe20cb641b018bbf01ad7e"
+	},
 	"observability": {
 		"enabled": false
 	}
