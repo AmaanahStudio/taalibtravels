@@ -27,8 +27,6 @@ import { bouwCsv } from "./csv";
 import { json, leesJson, methodeNietToegestaan, vanEigenOrigin } from "./http";
 import { routeerReizen } from "./reizen";
 
-const LOKALE_HOSTS: ReadonlySet<string> = new Set(["localhost", "127.0.0.1"]);
-
 /** Alles hieronder valt onder Cloudflare Access. */
 const BEHEER_API = "/api/admin/";
 
@@ -90,7 +88,7 @@ export default {
 async function apiAntwoord(request: Request, url: URL, env: Env): Promise<Response> {
   try {
     // Het beheer (ook inloggen) is alleen bereikbaar via Cloudflare Access.
-    if (url.pathname.startsWith(BEHEER_API) && !(await accessGoedgekeurd(request, url, env))) {
+    if (url.pathname.startsWith(BEHEER_API) && !(await accessGoedgekeurd(request, env))) {
       return json({ ok: false, melding: "Geen toegang." }, 403);
     }
 
@@ -457,15 +455,19 @@ function beheerIsIngesteld(env: Env): boolean {
  * `.dev.vars` (lokaal, `.gitignore`) en hoort nooit als secret of var in
  * productie te staan, want Access draait niet op localhost.
  */
-async function accessGoedgekeurd(request: Request, url: URL, env: Env): Promise<boolean> {
+async function accessGoedgekeurd(request: Request, env: Env): Promise<boolean> {
   /*
-   * Ook de host moet lokaal zijn. Belandt `ACCESS_UIT` per ongeluk in productie
-   * (bijvoorbeeld door `wrangler secret bulk .dev.vars`), dan blijft de controle
-   * aan: Cloudflare bepaalt de host via de custom domains, en die is nooit localhost.
+   * `ACCESS_UIT` telt alleen voor een verzoek dat niet via Cloudflare kwam. Elk
+   * verzoek in productie draagt een `CF-Ray`-header die de rand zelf zet en die
+   * een bezoeker niet kan weglaten; lokaal (`wrangler dev`) bestaat hij niet.
+   * Belandt `ACCESS_UIT` per ongeluk in productie (bijvoorbeeld door
+   * `wrangler secret bulk .dev.vars`), dan blijft de controle dus aan. De host
+   * is hiervoor onbruikbaar: `wrangler dev` herschrijft hem naar het domein uit
+   * `routes`.
    */
-  if (env.ACCESS_UIT === "1" && LOKALE_HOSTS.has(url.hostname)) return true;
   if (env.ACCESS_UIT === "1") {
-    console.error("ACCESS_UIT is gezet op een niet-lokale host; genegeerd. Verwijder deze variabele.");
+    if (!request.headers.has("CF-Ray")) return true;
+    console.error("ACCESS_UIT is gezet op een verzoek via Cloudflare; genegeerd. Verwijder deze variabele.");
   }
 
   if (!env.TEAM_DOMAIN || !env.POLICY_AUD) {
