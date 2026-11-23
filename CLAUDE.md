@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `npm run deploy:acc` | Build, `d1 migrations apply` en `wrangler deploy --env acceptatie`; draait in CI vanaf `acceptatie-master` |
 | `npm run db:migreer:acc` | `wrangler d1 migrations apply` op de acceptatie-D1 |
 | `npm run db:migreer:prod` | Idem op productie; alleen de gebruiker, bewust, bij een release |
-| `npm run kopieer:acc` | Overzicht van wat er van productie naar acceptatie zou gaan; met `-- --overschrijf` kopieert hij reizen, foto's en galerij (nooit deelnemers) |
+| `npm run kopieer:acc` | Overzicht van wat er van productie naar acceptatie zou gaan; met `-- --overschrijf` kopieert hij reizen, foto's en galerij (nooit deelnemers). Geautomatiseerd als workflow `kopieer-productie-naar-acceptatie.yml` (alleen handmatig starten, bewust niet gepland: een kopie overschrijft wat de klant test) |
 | `npm run start`     | Productieserver (na build); kent D1 niet, gebruik `preview` |
 | `npm run lint`      | ESLint                                                  |
 | `npm run typecheck` | `tsc --noEmit` voor de site **en** voor `worker/`        |

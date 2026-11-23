@@ -140,7 +140,7 @@ async function main() {
     bron[tabel] = query(BRON_DB, `SELECT * FROM ${tabel}`, `lezen ${tabel} (productie)`, false);
     for (const rij of bron[tabel]) {
       for (const kolom of Object.keys(rij)) {
-        if (!/^[a-z_]+$/.test(kolom)) throw new Error(`Onverwachte kolomnaam in ${tabel}: ${kolom}`);
+        if (!/^[a-z][a-z0-9_]*$/.test(kolom)) throw new Error(`Onverwachte kolomnaam in ${tabel}: ${kolom}`);
       }
     }
   }

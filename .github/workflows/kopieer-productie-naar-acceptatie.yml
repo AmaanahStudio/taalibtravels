@@ -1,0 +1,41 @@
+name: Kopieer productie naar acceptatie
+
+# Alleen op verzoek: een geplande kopie zou wat de klant op acceptatie test
+# (reizen, foto's, galerij) onaangekondigd overschrijven. Start hem via
+# Actions -> "Kopieer productie naar acceptatie" -> Run workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nooit tegelijk met een acceptatie-deploy: die draait migraties op dezelfde database.
+concurrency:
+  group: deploy-acceptatie
+  cancel-in-progress: false
+
+jobs:
+  kopieer:
+    # Het workflowbestand komt van de gekozen branch; alleen acceptatie-master mag
+    # met het token (dat ook productie kan lezen) aan de gang.
+    if: github.ref == 'refs/heads/acceptatie-master'
+    runs-on: ubuntu-latest
+    environment: acceptatie
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Productie wordt alleen gelezen; het script schrijft enkel naar de -acc-resources
+      # en raakt `deelnemers` nooit aan.
+      - name: Kopiëren
+        run: npm run kopieer:acc -- --overschrijf
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
