@@ -40,10 +40,11 @@ jobs:
           npm run cf-typegen
           rm .dev.vars
       - run: npm run lint
-      - run: npm run typecheck
       # Bouwen zonder token: next build, sharp en plugins draaien code van derden.
       - name: Bouwen
         run: npx opennextjs-cloudflare build
+      # Na de build: worker/index.ts importeert .open-next/worker.js, dat pas dan bestaat.
+      - run: npm run typecheck
       # Het token alleen in de stappen die het echt nodig hebben.
       - name: Migreren en deployen
         run: npm run db:migreer:acc && npx wrangler deploy --env acceptatie
