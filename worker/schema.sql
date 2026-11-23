@@ -1,10 +1,15 @@
--- Schema van de leads-database (D1).
+-- Schema van de leads-database (D1): de stand NA migratie 002.
 --
--- Toepassen na `wrangler d1 create taalibtravels-leads`:
+-- Dit bestand wordt niet meer bijgewerkt. Nieuwe schemawijzigingen komen alleen
+-- nog in `worker/migraties/` (003 en verder). De huidige stand is dus dit bestand
+-- plus alle migraties vanaf 003.
+--
+-- Nieuwe database: eerst dit bestand, daarna de migraties:
 --   wrangler d1 execute taalibtravels-leads --local  --file=./worker/schema.sql
---   wrangler d1 execute taalibtravels-leads --remote --file=./worker/schema.sql
+--   wrangler d1 migrations apply taalibtravels-leads --local
+-- (voor acceptatie: --env acceptatie --remote, zie CLAUDE.md)
 --
--- Alles staat op IF NOT EXISTS, dus het bestand mag opnieuw gedraaid worden.
+-- Alles staat op IF NOT EXISTS / OR IGNORE, dus het bestand mag opnieuw gedraaid worden.
 
 CREATE TABLE IF NOT EXISTS deelnemers (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,3 +89,16 @@ CREATE TABLE IF NOT EXISTS galerij (
   positie        INTEGER PRIMARY KEY,
   afbeelding_id  TEXT NOT NULL REFERENCES afbeeldingen (id)
 );
+
+-- Basislijn voor `wrangler d1 migrations apply`: wat hierboven staat, is de stand na
+-- 001 en 002. Zonder deze regels probeert wrangler 001 (DROP COLUMN ip_hash) opnieuw,
+-- en die kolom bestaat in een nieuwe database niet. Nieuwe migraties (003 en verder)
+-- horen NIET in dit bestand en NIET in deze lijst: wrangler draait ze zelf.
+CREATE TABLE IF NOT EXISTS d1_migrations (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT UNIQUE,
+  applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+INSERT OR IGNORE INTO d1_migrations (name) VALUES
+  ('001-ip-hash-weg.sql'),
+  ('002-reizen-afbeeldingen.sql');

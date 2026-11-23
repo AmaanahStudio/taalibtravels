@@ -20,7 +20,11 @@
     "hero-video": "node scripts/build-hero-video.mjs",
     "hero-video:web": "node scripts/build-hero-web.mjs",
     "preview": "opennextjs-cloudflare build && wrangler dev",
-    "deploy": "opennextjs-cloudflare build && wrangler deploy"
+    "deploy": "opennextjs-cloudflare build && wrangler deploy",
+    "deploy:acc": "opennextjs-cloudflare build && wrangler d1 migrations apply taalibtravels-leads-acc --env acceptatie --remote && wrangler deploy --env acceptatie",
+    "db:migreer:acc": "wrangler d1 migrations apply taalibtravels-leads-acc --env acceptatie --remote",
+    "db:migreer:prod": "wrangler d1 migrations apply taalibtravels-leads --remote",
+    "kopieer:acc": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/kopieer-naar-acceptatie.mjs"
   },
   "dependencies": {
     "@jsquash/webp": "1.5.0",

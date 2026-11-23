@@ -39,7 +39,10 @@
 		{
 			"binding": "DB",
 			"database_name": "taalibtravels-leads",
-			"database_id": "694508d6-d030-40ec-959f-9c0d933eb482"
+			"database_id": "694508d6-d030-40ec-959f-9c0d933eb482",
+			// Nodig voor `wrangler d1 migrations apply`; wrangler houdt in de tabel
+			// `d1_migrations` bij welke bestanden al gedraaid zijn.
+			"migrations_dir": "worker/migraties"
 		}
 	],
 	// Opslag voor de foto's uit het beheerportaal. `MEDIA` is de naam waarmee de
@@ -80,5 +83,53 @@
 	},
 	"observability": {
 		"enabled": false
+	},
+	// Acceptatie: zelfde code en build, eigen database, bucket, domein en Access-app.
+	// Deployt automatisch vanaf `acceptatie-master` (.github/workflows/deploy-acceptatie.yml).
+	// Bindings, vars en ratelimits erven NIET van hierboven; routes erven WEL, en zonder
+	// eigen routes zou deze Worker het productiedomein proberen over te nemen.
+	// Een nieuwe binding of var hoort dus op twee plekken: hierboven én hier.
+	// Elke wrangler-opdracht richting acceptatie heeft `--env acceptatie` nodig,
+	// anders raakt hij productie.
+	"env": {
+		"acceptatie": {
+			"routes": [{ "pattern": "acc.taalibtravels.com", "custom_domain": true }],
+			// Expliciet herhaald, ook al erven ze `false`: zo mist niemand ze bij het lezen.
+			"workers_dev": false,
+			"preview_urls": false,
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "taalibtravels-leads-acc",
+					"database_id": "0f5d58f5-2517-4a3f-80da-1d714e33326a",
+					"migrations_dir": "worker/migraties"
+				}
+			],
+			"r2_buckets": [
+				{
+					"binding": "MEDIA",
+					"bucket_name": "taalibtravels-media-acc"
+				}
+			],
+			// Eigen namespaces: met die van productie zou een klant die op acceptatie
+			// test zijn eigen inlogpogingen op productie opgebruiken (sleutel = IP-adres).
+			"ratelimits": [
+				{
+					"name": "LOGIN_LIMIT",
+					"namespace_id": "2001",
+					"simple": { "limit": 5, "period": 60 }
+				},
+				{
+					"name": "SIGNUP_LIMIT",
+					"namespace_id": "2002",
+					"simple": { "limit": 5, "period": 60 }
+				}
+			],
+			"vars": {
+				"TEAM_DOMAIN": "https://taalibtravelsdomain.cloudflareaccess.com",
+				// De AUD-tag van de Access-app op acc.taalibtravels.com, niet die van productie.
+				"POLICY_AUD": "2c18185a930631b2a5f5089b7d6ec2bff4a882c36c047ba3ea3115b3565e328f"
+			}
+		}
 	}
 }

@@ -323,6 +323,8 @@ dus te veel gezegd. Turnstile en de rate limit doen het anti-misbruikwerk al.
 npx wrangler d1 create taalibtravels-leads       # id in wrangler.jsonc zetten
 npx wrangler d1 execute taalibtravels-leads --remote --file=./worker/schema.sql
 npx wrangler d1 execute taalibtravels-leads --local  --file=./worker/schema.sql
+npx wrangler d1 migrations apply taalibtravels-leads --remote   # migraties vanaf 003
+npx wrangler d1 migrations apply taalibtravels-leads --local
 
 npx wrangler secret put ADMIN_GEBRUIKER          # gebruikersnaam of e-mail
 npx wrangler secret put ADMIN_WACHTWOORD         # minimaal 16 tekens
@@ -347,17 +349,30 @@ cookie te vervalsen.
 
 ### Schemawijzigingen
 
-`worker/schema.sql` beschrijft de tabel zoals hij hoort te zijn; voor een database
-die al bestaat staan de losse stappen genummerd in `worker/migraties/`. Toepassen:
+`worker/schema.sql` is de stand na migratie 002 en wordt niet meer bijgewerkt. Nieuwe
+wijzigingen komen als `NNN-naam.sql` in `worker/migraties/`; wrangler houdt in de
+tabel `d1_migrations` bij welke al gedraaid zijn. Toepassen:
 
 ```bash
-npx wrangler d1 execute taalibtravels-leads --local  --file=./worker/migraties/<nummer>-<naam>.sql
-npx wrangler d1 execute taalibtravels-leads --remote --file=./worker/migraties/<nummer>-<naam>.sql
+npx wrangler d1 migrations apply taalibtravels-leads --local
+npm run db:migreer:acc    # acceptatie (CI doet dit zelf bij elke deploy)
+npm run db:migreer:prod   # productie, bewust, bij een release
 ```
 
 Verwijdert een migratie een kolom, **deploy dan eerst de code die die kolom niet
-meer schrijft.** Andersom schrijft de nog draaiende oude Worker naar iets dat niet
-meer bestaat, en breekt elke inschrijving.
+meer schrijft** (expand/contract: toevoegen samen met de code, verwijderen in een
+latere push). Andersom schrijft de nog draaiende oude Worker naar iets dat niet
+meer bestaat, en breekt elke inschrijving. Een gedraaide migratie hernoem je nooit.
+
+### Acceptatieomgeving
+
+`acc.taalibtravels.com` draait dezelfde code als productie, met eigen database,
+bucket, admin-secrets en Access-app. Elke push naar de branch `acceptatie-master`
+bouwt, migreert en deployt automatisch (GitHub Actions); `master` blijft productie en
+gaat pas live na akkoord van de klant. De klant krijgt een eenmalige code per mail
+(Cloudflare Access) en logt daarna in het portaal met een eigen gebruikersnaam en
+wachtwoord. Zie de sectie "Omgevingen" in `CLAUDE.md` voor de details; met
+`npm run kopieer:acc` zet je reizen en foto's van productie op acceptatie (nooit deelnemers).
 
 ### Het overzicht gebruiken
 

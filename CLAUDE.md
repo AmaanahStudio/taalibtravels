@@ -11,7 +11,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `npm run dev`       | Dev server op http://localhost:3000 — D1 via `initOpenNextCloudflareForDev` (lokale staat), **zonder `/api` en `/media`** |
 | `npm run preview`   | `opennextjs-cloudflare build && wrangler dev` — de enige manier om `/api`, `/media` en de D1-pagina's lokaal te draaien |
 | `npm run build`     | `next build` (draait eerst `prebuild`: `images` + `headers`) |
-| `npm run deploy`    | `opennextjs-cloudflare build && wrangler deploy`        |
+| `npm run deploy`    | `opennextjs-cloudflare build && wrangler deploy` — **productie**; deployt normaal via Workers Builds bij een merge naar `master` |
+| `npm run deploy:acc` | Build, `d1 migrations apply` en `wrangler deploy --env acceptatie`; draait in CI vanaf `acceptatie-master` |
+| `npm run db:migreer:acc` | `wrangler d1 migrations apply` op de acceptatie-D1 |
+| `npm run db:migreer:prod` | Idem op productie; alleen de gebruiker, bewust, bij een release |
+| `npm run kopieer:acc` | Overzicht van wat er van productie naar acceptatie zou gaan; met `-- --overschrijf` kopieert hij reizen, foto's en galerij (nooit deelnemers) |
 | `npm run start`     | Productieserver (na build); kent D1 niet, gebruik `preview` |
 | `npm run lint`      | ESLint                                                  |
 | `npm run typecheck` | `tsc --noEmit` voor de site **en** voor `worker/`        |
@@ -31,8 +35,9 @@ via type stripping.
 draai eerst `npm run typegen` (of `dev`/`build`) én `npm run cf-typegen`. Kopieer ook
 `.dev.vars.example` naar `.dev.vars` (staat in `.gitignore`): `wrangler types` leest daar
 de namen van de secrets uit en `wrangler dev` de waarden. Voor `npm run preview` moet
-bovendien de lokale D1 bestaan (`worker/schema.sql` en `worker/migraties/*` toepassen met
-`wrangler d1 execute taalibtravels-leads --local --file=…`), en `preview` bouwt eerst
+bovendien de lokale D1 bestaan (`worker/schema.sql` draaien met
+`wrangler d1 execute taalibtravels-leads --local --file=./worker/schema.sql` en daarna
+`npx wrangler d1 migrations apply taalibtravels-leads --local`), en `preview` bouwt eerst
 `.open-next/`, dat de Worker importeert.
 
 Er is **geen testrunner en geen testsuite**. `lint` + `typecheck` +
@@ -61,6 +66,39 @@ Wat in het beheerportaal verandert, is dus direct live, zonder build of deploy.
 Statische bestanden (`/_next/static`, `public/`) serveert Cloudflare rechtstreeks uit
 `.open-next/assets` (binding `ASSETS`), zonder de Worker; hun headers komen uit
 `public/_headers` (zie [Headers](#headers)).
+
+### Omgevingen: productie en acceptatie
+
+Zelfde code, zelfde build; alleen bindings, vars en domein verschillen.
+
+| | Productie | Acceptatie |
+| --- | --- | --- |
+| Branch | `master` | `acceptatie-master` |
+| Worker | `taalibtravels` | `taalibtravels-acceptatie` (`env.acceptatie`) |
+| Domein | `taalibtravels.com`, `www.` | `acc.taalibtravels.com` |
+| D1 | `taalibtravels-leads` | `taalibtravels-leads-acc` |
+| R2 | `taalibtravels-media` | `taalibtravels-media-acc` |
+| Ratelimit-namespaces | 1001 / 1002 | 2001 / 2002 |
+| Access-app | `/admin*` en `/api/admin/*` | de hele host |
+| Deploy | Workers Builds bij merge naar `master` | GitHub Actions (`.github/workflows/deploy-acceptatie.yml`) bij elke push |
+
+- **Flow:** feature-branch -> `acceptatie-master` (direct live op `acc.`) -> akkoord klant ->
+  bewuste merge naar `master` (= productie). Een hotfix op `master` meteen terugmergen naar
+  `acceptatie-master`.
+- **`env.acceptatie` in `wrangler.jsonc`:** `routes` erft WEL van de top-level en moet dus
+  altijd eigen waarden hebben, anders claimt de acceptatie-Worker het productiedomein.
+  `d1_databases`, `r2_buckets`, `ratelimits` en `vars` erven NIET. Een nieuwe binding of var
+  hoort dus op **twee plekken** in `wrangler.jsonc`.
+- **Placeholders:** `database_id` en `POLICY_AUD` van acceptatie staan als `VUL_IN_...` tot
+  de gebruiker de resources heeft aangemaakt. Met een placeholder faalt het dicht: de
+  migratiestap vindt de database niet (deploy stopt) en `/api/admin/*` geeft 403.
+- **Access:** `POLICY_AUD` verschilt per omgeving, dus een token van de ene app werkt niet op
+  de andere. `ACCESS_UIT` hoort op geen enkele omgeving; secrets zet je één voor één met
+  `wrangler secret put ... --env acceptatie`, nooit met `secret bulk .dev.vars`.
+- **Canonical:** `site.json` blijft bewust naar productie wijzen, ook op acceptatie: het is
+  dezelfde build en voor zoekmachines het juiste signaal.
+- **`--env acceptatie` is verplicht** bij elke `wrangler`-opdracht richting acceptatie, anders
+  raakt hij productie. `npm run deploy` vanaf `acceptatie-master` deployt naar productie.
 
 ### Content: JSON voor het vaste, D1 + R2 voor het beheerde
 
@@ -227,8 +265,10 @@ Deelnemers vullen `/giveaway` in, de beheerder werkt op `/admin`; daartussen zit
 | `worker/beveiligingsheaders.ts` | De ene definitie van alle headers; zie [Headers](#headers) |
 | `worker/auth.ts` | Sessiecookie (HMAC), inlogvergelijking in constante tijd |
 | `worker/csv.ts` | CSV-export |
-| `worker/schema.sql` | De tabellen; opnieuw draaien mag (`IF NOT EXISTS`) |
-| `worker/migraties/` | Genummerde wijzigingen op een database die al bestaat (`002` maakt `reizen`, `afbeeldingen`, `galerij`) |
+| `worker/schema.sql` | De stand na migratie 002 plus de basislijn voor `d1 migrations`; wordt niet meer bijgewerkt. Opnieuw draaien mag |
+| `worker/migraties/` | Toegepast met `wrangler d1 migrations apply`, bijgehouden in de tabel `d1_migrations` (`002` maakt `reizen`, `afbeeldingen`, `galerij`) |
+| `.github/workflows/deploy-acceptatie.yml` | Lint, typecheck, build, migreren en deployen naar acceptatie bij een push op `acceptatie-master` |
+| `scripts/kopieer-naar-acceptatie.mjs` | Kopieert reizen, foto's en galerij van productie naar acceptatie; raakt `deelnemers` nooit aan |
 | `worker/open-next.d.ts` | Typedeclaratie voor `../.open-next/worker.js`, dat pas na een OpenNext-build bestaat |
 | `src/lib/leads.ts` | Validatieregels van de inschrijving, **gedeeld** met het formulier |
 | `src/lib/reizen.ts` | Validatie en vorm van een reis (`valideerReis`, `ReisInvoer`), gedeeld met het portaal en het seed-script |
@@ -249,6 +289,17 @@ Wat je moet weten voordat je hier iets wijzigt:
   `worker/tsconfig.json`: die code draait op workerd en heeft geen DOM. `npm run typecheck`
   draait allebei. Het `Env`-type komt uit `npm run cf-typegen` en is dus gegenereerd —
   na een wijziging in `wrangler.jsonc` opnieuw draaien.
+- **Migraties.** `schema.sql` is de stand na 002; elke schemawijziging komt daarna alleen nog
+  als migratie in `worker/migraties/`. Naam `NNN-korte-naam.sql`, met de hand aangemaakt (niet
+  met `wrangler d1 migrations create`, dat maakt `0003_naam.sql`). De **bestandsnaam is de
+  sleutel** in `d1_migrations`: een gedraaide migratie nooit hernoemen. Schrijf herhaalbaar waar
+  SQLite het toelaat (`IF NOT EXISTS`). Acceptatie migreert vóór de deploy, dus een migratie
+  moet compatibel zijn met de code die dan nog draait (expand/contract): toevoegen mag samen met
+  de code in één push; verwijderen of hernoemen pas in een latere push, nadat de code die de
+  kolom niet meer gebruikt overal staat. Releasevolgorde voor productie: eerst
+  `npm run db:migreer:prod`, dan `acceptatie-master` naar `master` mergen; bij een
+  contract-migratie andersom. Productie heeft de basislijn nog niet: draai vóór de eerste
+  migratie 003 eenmalig `schema.sql` op productie.
 - **Er is geen `run_worker_first` en geen `not_found_handling`** meer: bestanden uit
   `assets` winnen vanzelf, al het andere komt bij `worker/index.ts` en de 404 rendert Next
   zelf. Voeg ze niet terug; `not_found_handling: "404-page"` zou de Worker voorbijgaan.

@@ -1,0 +1,53 @@
+name: Deploy acceptatie
+
+on:
+  push:
+    branches: [acceptatie-master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nooit twee deploys tegelijk, en een lopende niet afbreken: een migratie die
+# halverwege wordt gestopt is erger dan even wachten.
+concurrency:
+  group: deploy-acceptatie
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # workflow_dispatch kan elke ref kiezen; alleen acceptatie-master mag deployen.
+    if: github.ref == 'refs/heads/acceptatie-master'
+    runs-on: ubuntu-latest
+    environment: acceptatie
+    timeout-minutes: 30
+    steps:
+      # Vastgepind op een commit: een tag kan verschuiven naar andere code.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `wrangler types` leest de secretnamen uit .dev.vars; het voorbeeld volstaat.
+      # Weggooien na gebruik: .dev.vars hoort nergens anders dan lokaal.
+      - name: Types genereren
+        run: |
+          cp .dev.vars.example .dev.vars
+          npm run typegen
+          npm run cf-typegen
+          rm .dev.vars
+      - run: npm run lint
+      - run: npm run typecheck
+      # Bouwen zonder token: next build, sharp en plugins draaien code van derden.
+      - name: Bouwen
+        run: npx opennextjs-cloudflare build
+      # Het token alleen in de stappen die het echt nodig hebben.
+      - name: Migreren en deployen
+        run: npm run db:migreer:acc && npx wrangler deploy --env acceptatie
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: "false"
